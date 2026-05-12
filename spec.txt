@@ -1,0 +1,795 @@
+# ARIA Dashboard — Technical Specification
+
+**Version:** 1.0  
+**Date:** March 2026  
+**Status:** Draft for internal review  
+**Audience:** Engineering, data science, product
+
+---
+
+## 1. Overview
+
+### 1.1 What we are building
+
+A single-page web dashboard that displays the AI Risk Impact Assessment (ARIA) for every job role in CPFB's organisation. The dashboard scores each role on two dimensions — Automation Impact Score (AIS) and Augmentation Potential Score (APS) — and classifies it into one of nine strategic categories using the ARIA classification matrix.
+
+### 1.2 What we are NOT building (Phase 2)
+
+- Skills adjacency or gap analysis
+- Role transition simulator or pathways
+- Developmental pathways
+- Scenario modelling
+- Intelligence Studio (conversational AI)
+
+### 1.3 Users
+
+- CPFB HR leadership (primary): enterprise-wide view of workforce AI exposure
+- CPFB department heads: filtered view of their department's roles
+- CPFB analysts: per-role drill-down with full score breakdowns
+
+---
+
+## 2. Data requirements
+
+### 2.1 Input data from CPFB
+
+| Field | Required | Format | Notes |
+|---|---|---|---|
+| Role title | Yes | Text | Official CPFB job title |
+| Role ID | Yes | Text | Unique identifier per role |
+| Department | Yes | Text | Organisational unit |
+| Job grade / level | Preferred | Text | For filtering and grouping |
+| Headcount | Preferred | Integer | Number of employees in this role |
+| Role description | Yes | Text | Minimum 100 words; task-level detail preferred |
+| Reporting line | Optional | Text | For org hierarchy views |
+
+### 2.2 Reference data (Pulsifi-provided)
+
+- O*NET task taxonomy mapping (for roles that align with standard occupational codes)
+- Scoring rubric per AIS and APS variable (see Section 3)
+- ARIA classification matrix thresholds
+
+### 2.3 Data preprocessing pipeline
+
+```
+CPFB role data (CSV/Excel)
+    │
+    ▼
+[1] Clean & validate
+    - Deduplicate role titles
+    - Standardise department names
+    - Flag roles with insufficient descriptions
+    │
+    ▼
+[2] Task decomposition
+    - Parse role descriptions into discrete tasks
+    - Map tasks to O*NET intermediate work activities where possible
+    - For unmapped roles: manual task decomposition by Pulsifi analyst
+    │
+    ▼
+[3] Variable scoring engine (see Section 3)
+    │
+    ▼
+[4] ARIA classification (see Section 4)
+    │
+    ▼
+[5] Output: scored role dataset → dashboard
+```
+
+---
+
+## 3. Scoring algorithm
+
+### 3.1 Automation Impact Score (AIS)
+
+The AIS answers: *how much of what this role does every day could AI or automation technology do instead?*
+
+#### 3.1.1 Variables
+
+| # | Variable | Weight | Inverse | Description |
+|---|---|---|---|---|
+| V1 | Cognitive routine level | 25% | No | Degree to which the role's cognitive tasks follow predictable, rule-based patterns. High = highly routine, repetitive mental work. |
+| V2 | Data dependency and structuredness | 20% | No | Extent to which the role works with structured, digital, machine-readable data. High = heavily data-dependent with structured inputs. |
+| V3 | Process repeatability and volume | 20% | No | Degree to which the role's processes are standardised, repeatable, and high-volume. High = highly standardised processes. |
+| V4 | Social perception | 15% | Yes | Degree to which the role requires reading social cues, empathy, negotiation, or interpersonal nuance. High raw score = high social requirement = harder to automate. |
+| V5 | Physical complexity | 10% | Yes | Degree to which the role requires physical presence, dexterity, or environmental interaction. High raw score = high physical requirement = harder to automate. |
+| V6 | Regulatory accountability | 10% | Yes | Degree to which the role carries personal regulatory, legal, or fiduciary accountability. High raw score = high accountability = harder to automate. |
+
+#### 3.1.2 Scoring each variable
+
+Each variable is scored on a scale of 0–100 using a structured rubric. The scoring approach is LLM-assisted with human review:
+
+**Step 1: Task extraction**
+From the role description + O*NET mapping, extract a list of discrete tasks performed by the role.
+
+**Step 2: Per-variable assessment**
+For each variable, assess the role against the rubric using the task list as evidence. The LLM (Claude or GPT-4) is prompted with:
+
+```
+Given the following role and its tasks:
+Role: {role_title}
+Tasks: {task_list}
+
+Score the following variable on a scale of 0-100:
+Variable: {variable_name}
+Definition: {variable_definition}
+
+Scoring rubric:
+- 0-20: Minimal presence of this characteristic
+- 21-40: Low presence; occasional instances
+- 41-60: Moderate presence; regular but not dominant
+- 61-80: High presence; dominant characteristic of the role
+- 81-100: Very high presence; defines the role
+
+Provide:
+1. Score (integer 0-100)
+2. Justification (2-3 sentences citing specific tasks)
+```
+
+**Step 3: Human review**
+A Pulsifi analyst reviews all LLM-generated scores, adjusting where the justification is weak or the score appears miscalibrated. All adjustments are logged with rationale.
+
+#### 3.1.3 Inverse transformation
+
+For variables V4, V5, V6 (inverse variables), the raw score is inverted before weighting:
+
+```
+adjusted_score = 100 - raw_score
+```
+
+Rationale: A role with high social perception requirements (raw score 80) is harder to automate, so the adjusted score (20) reflects low automation potential on that dimension.
+
+#### 3.1.4 Composite AIS calculation
+
+```
+AIS = (V1_score × 0.25)
+    + (V2_score × 0.20)
+    + (V3_score × 0.20)
+    + ((100 - V4_raw) × 0.15)
+    + ((100 - V5_raw) × 0.10)
+    + ((100 - V6_raw) × 0.10)
+```
+
+**Worked example: Customer Service Officer**
+
+| Variable | Raw score | Inverse applied | Weight | Weighted score |
+|---|---|---|---|---|
+| Cognitive routine level | 78 | — | 25% | 19.5 |
+| Data dependency | 72 | — | 20% | 14.4 |
+| Process repeatability | 80 | — | 20% | 16.0 |
+| Social perception | 42 | 100 - 42 = 58 | 15% | 8.7 |
+| Physical complexity | 18 | 100 - 18 = 82 | 10% | 8.2 |
+| Regulatory accountability | 22 | 100 - 22 = 78 | 10% | 7.8 |
+| **AIS** | | | | **74.6** |
+
+#### 3.1.5 AIS rating tiers
+
+| AIS range | Rating | Strategic implication |
+|---|---|---|
+| 75–100 | Very high | Critical exposure — immediate intervention required |
+| 60–74 | High | Transition required — structured reskilling within 12 months |
+| 45–59 | Moderate | Monitor — quarterly review and contingency planning |
+| 30–44 | Low | Augmentation focus — invest in AI tools, not transition |
+| 0–29 | Very low | Minimal disruption — protected in near term |
+
+---
+
+### 3.2 Augmentation Potential Score (APS)
+
+The APS answers: *to what degree can AI amplify what the human in this role produces, without displacing them?*
+
+#### 3.2.1 Variables
+
+| # | Variable | Weight | Description |
+|---|---|---|---|
+| V1 | Knowledge and information processing intensity | 25% | Volume and complexity of information the role must synthesise, analyse, or produce. High = heavy knowledge work. |
+| V2 | Output quality and volume sensitivity | 25% | Degree to which the role's outputs benefit from higher volume or improved quality. High = significant gains from AI-assisted output. |
+| V3 | Decision support requirements | 20% | Extent to which the role makes or supports complex decisions that benefit from data analysis. High = heavy decision support needs. |
+| V4 | Repetitive cognitive work within expert role | 20% | Amount of repetitive analytical or cognitive tasks within an otherwise expert-level role. High = lots of repetitive expert work AI could handle. |
+| V5 | Communication and collaboration volume | 10% | Volume of communication, coordination, and collaboration the role manages. High = heavy communication load. |
+
+#### 3.2.2 Scoring approach
+
+Same LLM-assisted + human review process as AIS (Section 3.1.2). No inverse transformations — all APS variables are scored directly (higher = more augmentation potential).
+
+#### 3.2.3 Composite APS calculation
+
+```
+APS = (V1_score × 0.25)
+    + (V2_score × 0.25)
+    + (V3_score × 0.20)
+    + (V4_score × 0.20)
+    + (V5_score × 0.10)
+```
+
+**Worked example: Policy Research Officer**
+
+| Variable | Score | Weight | Weighted score |
+|---|---|---|---|
+| Knowledge and information processing intensity | 82 | 25% | 20.5 |
+| Output quality and volume sensitivity | 76 | 25% | 19.0 |
+| Decision support requirements | 68 | 20% | 13.6 |
+| Repetitive cognitive work within expert role | 72 | 20% | 14.4 |
+| Communication and collaboration volume | 64 | 10% | 6.4 |
+| **APS** | | | **73.9** |
+
+#### 3.2.4 APS rating tiers
+
+| APS range | Rating | Strategic implication |
+|---|---|---|
+| 75–100 | Very high | Immediate AI tool deployment — highest productivity return |
+| 60–74 | High | Strong augmentation case — structured AI adoption within 6 months |
+| 45–59 | Moderate | Selective augmentation — identify specific high-value AI tools |
+| 30–44 | Low | Limited opportunity — monitor as AI capabilities evolve |
+| 0–29 | Very low | Minimal augmentation potential in current AI landscape |
+
+---
+
+## 4. ARIA classification matrix
+
+### 4.1 Matrix definition
+
+The ARIA classification combines AIS and APS into a 3×3 matrix. The five-tier ratings (Section 3.1.5, 3.2.4) collapse into three bands for the matrix:
+
+| Band | AIS range | APS range |
+|---|---|---|
+| Low | 0–44 | 0–44 |
+| Medium | 45–64 | 45–64 |
+| High | 65–100 | 65–100 |
+
+### 4.2 Classification lookup
+
+| | AIS Low (0–44) | AIS Medium (45–64) | AIS High (65–100) |
+|---|---|---|---|
+| **APS High (65–100)** | Expand | Optimize | Transform |
+| **APS Medium (45–64)** | Invest selectively | Adapt | Accelerate |
+| **APS Low (0–44)** | Maintain | Monitor | Transition |
+
+### 4.3 Classification definitions and recommendations
+
+| Classification | Priority | Definition | Recommended action |
+|---|---|---|---|
+| Transform | Critical | High automation risk AND high augmentation potential. Highest impact zone. | Radical role redesign. Role evolves into AI orchestration function. Timeline: 6–12 months. |
+| Accelerate | High | High automation risk, moderate augmentation. Displacement likely if no action. | Begin role restructuring. Deploy AI aggressively to mitigate risk, redesign around AI strengths. |
+| Transition | High | High automation risk, low augmentation. AI replaces most of the role's value. | Plan transition to adjacent roles via structured reskilling. Identify target roles with skills overlap. |
+| Optimize | Medium | Moderate automation risk, high augmentation. Good risk-reward trade-off. | Scale AI-human teams. Shift role toward high-judgment tasks before automation erodes routine components. |
+| Adapt | Medium | Moderate automation risk and augmentation. Balanced position. | Integrate AI into existing workflows. Train employees on AI collaboration. |
+| Monitor | Low-medium | Moderate automation risk, low augmentation. Some routine tasks at risk. | Apply AI for selective tasks without full role overhaul. Review quarterly. |
+| Expand | Low | Low automation risk, high augmentation. Best-case scenario. | Embed AI tools to expand role scope and impact. Opportunity to scale up human interactions. |
+| Invest selectively | Low | Low automation risk, moderate augmentation. Stable with pockets of opportunity. | Identify specific efficiency gains. No urgency for structural change. |
+| Maintain | Minimal | Low automation risk, low augmentation. Human judgment essential. | Retain status quo. Role is protected in the near-to-medium term. |
+
+### 4.4 Boundary handling
+
+Roles scoring within 3 points of a band boundary (e.g., AIS = 43 or AIS = 66) are flagged as "boundary cases" in the dashboard and include a note that small scoring adjustments could shift the classification. This is important for transparency — CPFB analysts should know when a classification is firmly in its zone versus sitting on the edge.
+
+### 4.5 Algorithm pseudocode
+
+```python
+def classify_role(role):
+    """
+    Input: role dict with 'ais' and 'aps' composite scores
+    Output: classification string + metadata
+    """
+    ais = role['ais']
+    aps = role['aps']
+
+    # Band assignment
+    ais_band = 'low' if ais <= 44 else ('medium' if ais <= 64 else 'high')
+    aps_band = 'low' if aps <= 44 else ('medium' if aps <= 64 else 'high')
+
+    # Classification lookup
+    matrix = {
+        ('low',  'high'):   'Expand',
+        ('medium','high'):  'Optimize',
+        ('high', 'high'):   'Transform',
+        ('low',  'medium'): 'Invest selectively',
+        ('medium','medium'):'Adapt',
+        ('high', 'medium'): 'Accelerate',
+        ('low',  'low'):    'Maintain',
+        ('medium','low'):   'Monitor',
+        ('high', 'low'):    'Transition',
+    }
+    classification = matrix[(ais_band, aps_band)]
+
+    # Boundary flag
+    ais_boundary = min(abs(ais - 44), abs(ais - 65)) <= 3
+    aps_boundary = min(abs(aps - 44), abs(aps - 65)) <= 3
+    is_boundary = ais_boundary or aps_boundary
+
+    # Risk level
+    risk = 'Very high' if ais >= 75 else (
+           'High' if ais >= 60 else (
+           'Moderate' if ais >= 45 else (
+           'Low' if ais >= 30 else 'Very low')))
+
+    return {
+        'classification': classification,
+        'ais_band': ais_band,
+        'aps_band': aps_band,
+        'risk_level': risk,
+        'is_boundary_case': is_boundary,
+    }
+```
+
+---
+
+## 5. Dashboard specification
+
+### 5.1 Architecture
+
+```
+┌─────────────┐     ┌──────────────┐     ┌───────────────┐
+│  Data layer  │────▶│  API layer   │────▶│  Frontend     │
+│  (Postgres)  │     │  (FastAPI)   │     │  (React)      │
+└─────────────┘     └──────────────┘     └───────────────┘
+```
+
+**Data layer:** PostgreSQL database storing scored role data, variable breakdowns, and classification metadata.
+
+**API layer:** FastAPI service exposing endpoints for the dashboard. For a one-off analysis, this can be simplified to a static JSON file served directly if CPFB doesn't need real-time updates.
+
+**Frontend:** React single-page application with Tailwind CSS for styling and Chart.js or Recharts for visualisations.
+
+### 5.2 Data model
+
+```sql
+-- Core tables
+CREATE TABLE departments (
+    id          SERIAL PRIMARY KEY,
+    name        VARCHAR(100) NOT NULL,
+    headcount   INTEGER
+);
+
+CREATE TABLE roles (
+    id              SERIAL PRIMARY KEY,
+    title           VARCHAR(200) NOT NULL,
+    role_code       VARCHAR(50) UNIQUE,
+    department_id   INTEGER REFERENCES departments(id),
+    grade           VARCHAR(50),
+    headcount       INTEGER DEFAULT 1,
+    description     TEXT,
+    onet_code       VARCHAR(20),  -- O*NET SOC mapping if available
+    ais_composite   DECIMAL(5,1),
+    aps_composite   DECIMAL(5,1),
+    classification  VARCHAR(30),
+    risk_level      VARCHAR(20),
+    is_boundary     BOOLEAN DEFAULT FALSE,
+    scored_at       TIMESTAMP DEFAULT NOW(),
+    reviewed_by     VARCHAR(100),
+    review_status   VARCHAR(20) DEFAULT 'pending'
+        -- pending | reviewed | disputed | finalised
+);
+
+CREATE TABLE ais_variables (
+    id          SERIAL PRIMARY KEY,
+    role_id     INTEGER REFERENCES roles(id),
+    variable    VARCHAR(50) NOT NULL,
+        -- crl | dds | prv | sp | pc | ra
+    raw_score   INTEGER CHECK (raw_score BETWEEN 0 AND 100),
+    is_inverse  BOOLEAN DEFAULT FALSE,
+    adjusted    INTEGER CHECK (adjusted BETWEEN 0 AND 100),
+    weight      DECIMAL(3,2),
+    weighted    DECIMAL(5,1),
+    rationale   TEXT,
+    source      VARCHAR(20) DEFAULT 'llm'
+        -- llm | manual | hybrid
+);
+
+CREATE TABLE aps_variables (
+    id          SERIAL PRIMARY KEY,
+    role_id     INTEGER REFERENCES roles(id),
+    variable    VARCHAR(50) NOT NULL,
+        -- kip | oqv | dsr | rcw | ccv
+    score       INTEGER CHECK (score BETWEEN 0 AND 100),
+    weight      DECIMAL(3,2),
+    weighted    DECIMAL(5,1),
+    rationale   TEXT,
+    source      VARCHAR(20) DEFAULT 'llm'
+);
+
+-- Audit trail for score adjustments
+CREATE TABLE score_adjustments (
+    id              SERIAL PRIMARY KEY,
+    role_id         INTEGER REFERENCES roles(id),
+    score_type      VARCHAR(3),  -- ais | aps
+    variable        VARCHAR(50),
+    old_score       INTEGER,
+    new_score       INTEGER,
+    adjusted_by     VARCHAR(100),
+    reason          TEXT,
+    adjusted_at     TIMESTAMP DEFAULT NOW()
+);
+```
+
+### 5.3 API endpoints
+
+For a one-off analysis build, a minimal API:
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/roles` | All roles with scores, classifications. Supports query params: `dept`, `classification`, `risk_level` |
+| GET | `/api/roles/{id}` | Single role with full variable breakdown |
+| GET | `/api/summary` | Aggregate metrics: total roles, counts per classification, counts per risk tier |
+| GET | `/api/matrix` | Role counts per matrix cell |
+| GET | `/api/departments` | List of departments with role counts |
+
+### 5.4 Dashboard views
+
+#### View 1: Executive summary (default landing)
+
+**Top bar: 4 metric cards**
+- Total roles assessed (with department count)
+- Roles at high automation risk (AIS >= 60)
+- Roles with high augmentation potential (APS >= 60)
+- Roles needing priority action (Transform + Accelerate count)
+
+**Filters (persistent across all views)**
+- Department (dropdown, multi-select)
+- Classification (dropdown)
+- Risk level (dropdown)
+- Search by role name (text input)
+
+**Centre: ARIA classification matrix (3×3 grid)**
+- Each cell shows: classification name, role count, top 2-3 role names
+- Cell background colour encodes priority (green = low, amber = medium, red = high)
+- Click a cell to filter the table below
+
+**Bottom: Role table**
+- Columns: role title, department, grade, headcount, AIS, APS, classification (badge), risk level (badge)
+- Sortable by any column
+- Click a row to open the detail panel
+
+#### View 2: Role detail (slide-in panel or expanded row)
+
+**Header**
+- Role title, department, grade
+- Classification badge
+- Headcount in this role
+
+**Score summary: 3 cards**
+- AIS composite score (with visual gauge or bar)
+- APS composite score (with visual gauge or bar)
+- Risk level
+
+**AIS variable breakdown (6 rows)**
+- Variable name, raw score, inverse applied (yes/no), weight, weighted score
+- Horizontal bar chart per variable
+- Flag if any variable was manually adjusted (with link to rationale)
+
+**APS variable breakdown (5 rows)**
+- Variable name, score, weight, weighted score
+- Horizontal bar chart per variable
+
+**Strategic recommendation**
+- Text block with the classification-specific recommendation (from Section 4.3)
+- If boundary case: amber callout noting proximity to band threshold
+
+**Score methodology note**
+- Source indicator per variable: LLM-generated, manually adjusted, or hybrid
+- Link to scoring rubric documentation
+
+#### View 3: Distribution charts (secondary tab or scroll section)
+
+**Chart 1: AIS distribution**
+- Histogram showing role count across AIS ranges (0-20, 21-40, 41-60, 61-80, 81-100)
+- Colour-coded by risk tier
+
+**Chart 2: APS distribution**
+- Same histogram format for APS
+
+**Chart 3: AIS vs APS scatter plot**
+- Each dot = one role, positioned by (AIS, APS)
+- Dot size = headcount
+- Dot colour = classification
+- Hover tooltip: role name, department, scores
+- Grid lines at band boundaries (44, 65) dividing the plot into the 9 ARIA zones
+
+**Chart 4: Classification distribution**
+- Horizontal bar chart showing role count per classification
+- Sorted by priority level
+
+**Chart 5: Department comparison**
+- Grouped bar chart: each department shows average AIS and average APS
+- Highlights departments with highest concentration of high-risk roles
+
+---
+
+## 6. Scoring engine implementation
+
+### 6.1 Pipeline overview
+
+```
+For each role in CPFB dataset:
+    │
+    [1] Extract tasks from role description
+    │   - Use LLM to decompose description into 5-15 discrete tasks
+    │   - Map each task to O*NET IWA codes where possible
+    │
+    [2] Score 6 AIS variables
+    │   - Prompt LLM with role + tasks + variable rubric
+    │   - Collect score (0-100) + justification per variable
+    │   - Apply inverse for V4, V5, V6
+    │   - Calculate weighted composite
+    │
+    [3] Score 5 APS variables
+    │   - Same LLM-assisted approach
+    │   - No inversions
+    │   - Calculate weighted composite
+    │
+    [4] Classify role
+    │   - Apply ARIA matrix lookup
+    │   - Flag boundary cases
+    │
+    [5] Human review queue
+        - Analyst reviews all scores
+        - Adjustments logged to audit trail
+        - Status: pending → reviewed → finalised
+```
+
+### 6.2 LLM scoring prompt template
+
+```
+SYSTEM:
+You are an AI workforce impact analyst. You assess job roles
+for automation potential and AI augmentation potential using a
+structured methodology. You must provide scores grounded in
+specific tasks and responsibilities of the role.
+
+USER:
+## Role assessment
+
+**Role:** {role_title}
+**Department:** {department}
+**Description:** {role_description}
+
+**Extracted tasks:**
+{numbered_task_list}
+
+## Score the following variable
+
+**Variable:** {variable_name}
+**Definition:** {variable_definition}
+
+**Scoring rubric:**
+- 0-20:  Minimal — this characteristic is barely present in the role
+- 21-40: Low — occasional instances, not a defining feature
+- 41-60: Moderate — regularly present but balanced by other factors
+- 61-80: High — dominant characteristic, significantly defines the role
+- 81-100: Very high — the primary defining feature of the role
+
+**Response format (JSON):**
+{
+  "score": <integer 0-100>,
+  "confidence": <"high" | "medium" | "low">,
+  "justification": "<2-3 sentences citing specific tasks>",
+  "key_tasks": ["<task numbers most relevant to this score>"]
+}
+```
+
+### 6.3 Calibration process
+
+Before scoring the full population:
+
+1. Select 5 pilot roles spanning different AIS/APS profiles (one very high AIS, one very low, one balanced, etc.)
+2. Score all 11 variables for each pilot role using the LLM
+3. Have 2 Pulsifi analysts independently score the same 5 roles manually
+4. Compare LLM vs human scores — acceptable variance is +/- 10 points per variable
+5. Where variance exceeds threshold, refine the prompt or rubric
+6. Re-score pilot roles until LLM-human alignment is within tolerance
+7. Present pilot results to CPFB for validation before scaling
+
+### 6.4 Throughput estimate
+
+Assuming ~150 distinct roles:
+- 11 variables per role × 150 roles = 1,650 LLM calls
+- At ~30 seconds per call (including prompt construction and parsing): ~14 hours compute time
+- Human review at 5 minutes per role: ~12.5 hours analyst time
+- Calibration and adjustments: ~20 hours
+- Total: approximately 2-3 weeks for scoring phase with one analyst + one engineer
+
+---
+
+## 7. Technology stack
+
+### 7.1 Recommended stack
+
+| Component | Technology | Rationale |
+|---|---|---|
+| Frontend | React 18 + TypeScript | Component-based, good ecosystem for dashboards |
+| Styling | Tailwind CSS | Rapid prototyping, consistent design system |
+| Charts | Recharts or Chart.js | Lightweight, React-native (Recharts) or universal (Chart.js) |
+| API | FastAPI (Python) | Fast to build, async support, auto-generated docs |
+| Database | PostgreSQL 15 | Reliable, good JSON support for metadata |
+| Scoring engine | Python + Anthropic/OpenAI API | LLM-assisted scoring with structured outputs |
+| Deployment | Docker + cloud hosting | Containerised for portability |
+| Auth | Pre-existing Pulsifi auth | Already confirmed as handled |
+
+### 7.2 For prototype / MVP
+
+If the goal is a demonstrable prototype before full production build:
+
+| Component | Simplified approach |
+|---|---|
+| Frontend | Single React app reading from a static JSON file |
+| API | No API — scored data baked into a JSON fixture |
+| Database | No database — JSON file or embedded in frontend |
+| Scoring | Python script run locally, outputs JSON |
+| Deployment | Static site (Vercel, Netlify, or S3) |
+
+---
+
+## 8. Delivery milestones
+
+| Week | Milestone | Deliverable | CPFB action required |
+|---|---|---|---|
+| 1 | Kickoff + data ingestion | Data specification shared | Provide role data extract |
+| 2 | Task decomposition complete | Task list per role for review | Review sample task breakdowns |
+| 3 | Pilot scoring (5 roles) | Pilot score report with full breakdowns | **Validate pilot scores — gate review** |
+| 4–5 | Full population scoring | All roles scored (AIS + APS) | — |
+| 6 | Dashboard v1 | Working dashboard with all views | Review and feedback |
+| 7 | Score review period | Full score dataset for CPFB review | Review scores, flag disputes |
+| 8 | Dispute resolution | Adjusted scores with audit trail | Confirm adjusted scores |
+| 9–10 | Dashboard refinement | Updated dashboard with feedback incorporated | Final review |
+| 11 | UAT | Dashboard in staging environment | User acceptance testing |
+| 12 | Delivery | Final dashboard + methodology report | Sign-off |
+
+---
+
+## 9. Risks and mitigations
+
+| Risk | Likelihood | Impact | Mitigation |
+|---|---|---|---|
+| CPFB role descriptions too vague for task decomposition | Medium | High | Request structured JDs upfront; supplement with SME interviews for top 20 critical roles |
+| LLM scoring inconsistency across similar roles | Medium | Medium | Calibrate on pilot batch; use temperature=0; include few-shot examples in prompts |
+| CPFB disputes large number of scores | Medium | High | Build 4-week review buffer; provide per-variable rationale for every score |
+| Role population larger than expected (300+) | Low | Medium | Scoring engine scales linearly; add 1-2 weeks if > 200 roles |
+| CPFB requires government cloud hosting | Medium | Medium | Clarify in week 1; if required, add 2-3 weeks for infrastructure setup |
+| Band boundary disputes (e.g., AIS 64 vs 65) | High | Low | Boundary flagging in dashboard; provide sensitivity analysis showing impact of +/- 3 points |
+
+---
+
+## 10. Methodology defensibility
+
+### 10.1 Academic foundation
+
+The ARIA framework draws on established task-based automation assessment methodologies from labour economics:
+
+- Task decomposition approach: Autor, Levy & Murnane (2003); Acemoglu & Restrepo (2019)
+- O*NET task taxonomy: US Department of Labor occupational database with 19,000+ task statements
+- AI exposure scoring: Eloundou et al. (2024) — GPT-4 annotation of O*NET tasks for automation potential
+- Automation vs augmentation distinction: Brynjolfsson (2022); Stanford WORKBank framework (2025)
+
+### 10.2 Key defensibility points for CPFB review
+
+- Every score is backed by a per-variable justification citing specific tasks in the role
+- Full audit trail for any manual adjustments
+- Methodology paper available on request (to be prepared as part of delivery)
+- Pilot validation with CPFB before full-population scoring
+- Boundary cases explicitly flagged — no false precision
+- Override mechanism available — CPFB can adjust scores and see cascading impact
+
+### 10.3 Known limitations (to be disclosed to CPFB)
+
+- Scores reflect current-state AI capabilities; they will shift as technology evolves
+- The framework assesses task-level automation potential, not actual displacement likelihood (which depends on organisational, economic, and regulatory factors)
+- Weights (25/20/20/15/10/10 for AIS; 25/25/20/20/10 for APS) are calibrated against global research but not empirically validated against Singapore public sector outcomes specifically
+- The 3-band thresholds (0-44 / 45-64 / 65-100) are pragmatic approximations; roles near boundaries should be treated as continuous scores, not discrete categories
+
+---
+
+## 11. Appendix: variable scoring rubrics
+
+### 11.1 AIS variable rubrics
+
+**V1: Cognitive routine level (weight: 25%)**
+
+| Score range | Description | Example indicators |
+|---|---|---|
+| 0–20 | Tasks require novel problem-solving, creative judgment, or unprecedented decision-making in nearly every instance | Strategy formulation, crisis management, artistic creation |
+| 21–40 | Mix of routine and non-routine cognitive work; some tasks follow patterns but significant judgment required | Project management, client advisory |
+| 41–60 | Roughly equal split between routine and non-routine; clear procedures exist but exceptions are common | Mid-level analysis, team supervision |
+| 61–80 | Majority of cognitive tasks follow established patterns with occasional exceptions | Data entry with validation, standard report generation |
+| 81–100 | Nearly all cognitive tasks are rule-based, repetitive, and follow predictable patterns | Transaction processing, form validation, template-based correspondence |
+
+**V2: Data dependency and structuredness (weight: 20%)**
+
+| Score range | Description |
+|---|---|
+| 0–20 | Role primarily works with unstructured, qualitative, or tacit information |
+| 21–40 | Mix of structured and unstructured data; significant interpretation required |
+| 41–60 | Regular use of structured data but with substantial unstructured inputs |
+| 61–80 | Heavy reliance on structured, digital data in standardised formats |
+| 81–100 | Almost entirely dependent on structured, machine-readable data inputs |
+
+**V3: Process repeatability and volume (weight: 20%)**
+
+| Score range | Description |
+|---|---|
+| 0–20 | Each task instance is unique; no standardised process |
+| 21–40 | Some recurring processes but with significant variation per instance |
+| 41–60 | Moderate standardisation; processes are documented but adaptation is common |
+| 61–80 | Highly standardised processes executed at moderate-to-high volume |
+| 81–100 | Fully standardised, high-volume processes with minimal variation |
+
+**V4: Social perception (weight: 15%, INVERSE)**
+
+| Score range | Description |
+|---|---|
+| 0–20 | Minimal interpersonal interaction required |
+| 21–40 | Some interaction but primarily transactional |
+| 41–60 | Regular interpersonal interaction requiring basic empathy |
+| 61–80 | Frequent complex social interaction (negotiation, counselling, conflict resolution) |
+| 81–100 | Role is fundamentally defined by deep interpersonal dynamics |
+
+**V5: Physical complexity (weight: 10%, INVERSE)**
+
+| Score range | Description |
+|---|---|
+| 0–20 | Entirely desk-based, digital work |
+| 21–40 | Primarily desk-based with occasional site visits |
+| 41–60 | Regular physical presence required but not primary value |
+| 61–80 | Significant physical dexterity, mobility, or environmental interaction |
+| 81–100 | Role cannot be performed without physical presence and manual skill |
+
+**V6: Regulatory accountability (weight: 10%, INVERSE)**
+
+| Score range | Description |
+|---|---|
+| 0–20 | No personal regulatory or legal accountability |
+| 21–40 | Operates within regulated environment but accountability is institutional |
+| 41–60 | Some personal accountability for compliance within defined boundaries |
+| 61–80 | Significant personal regulatory, legal, or fiduciary accountability |
+| 81–100 | Role carries direct statutory accountability with personal liability |
+
+### 11.2 APS variable rubrics
+
+**V1: Knowledge and information processing intensity (weight: 25%)**
+
+| Score range | Description |
+|---|---|
+| 0–20 | Role requires minimal information processing or synthesis |
+| 21–40 | Some research or information gathering but limited synthesis |
+| 41–60 | Regular research, analysis, and information synthesis |
+| 61–80 | Heavy knowledge work requiring complex multi-source synthesis |
+| 81–100 | Role is fundamentally defined by deep research, analysis, and knowledge production |
+
+**V2: Output quality and volume sensitivity (weight: 25%)**
+
+| Score range | Description |
+|---|---|
+| 0–20 | Output quality/volume has minimal impact on role value |
+| 21–40 | Some benefit from improved output but not transformative |
+| 41–60 | Noticeable productivity gains from higher output quality or volume |
+| 61–80 | Significant value unlock if output quality or volume increases |
+| 81–100 | Dramatic improvement possible — role output is currently a bottleneck |
+
+**V3: Decision support requirements (weight: 20%)**
+
+| Score range | Description |
+|---|---|
+| 0–20 | Role makes or supports few decisions requiring data analysis |
+| 21–40 | Occasional decision support with limited data complexity |
+| 41–60 | Regular decision-making aided by moderate data analysis |
+| 61–80 | Frequent complex decisions requiring multi-variable analysis |
+| 81–100 | Role is primarily a decision support function handling complex analytical work |
+
+**V4: Repetitive cognitive work within expert role (weight: 20%)**
+
+| Score range | Description |
+|---|---|
+| 0–20 | Very little repetitive cognitive work; each task is unique |
+| 21–40 | Some repetitive elements but expert judgment dominates |
+| 41–60 | Moderate amount of repetitive analytical work mixed with expert tasks |
+| 61–80 | Substantial repetitive cognitive tasks that could be AI-assisted |
+| 81–100 | Heavy repetitive expert cognitive work (e.g., reviewing large document sets, writing similar reports) |
+
+**V5: Communication and collaboration volume (weight: 10%)**
+
+| Score range | Description |
+|---|---|
+| 0–20 | Minimal communication; primarily independent work |
+| 21–40 | Some coordination but limited volume |
+| 41–60 | Regular communication across teams and stakeholders |
+| 61–80 | Heavy coordination, meeting facilitation, cross-functional collaboration |
+| 81–100 | Role is primarily a communication and coordination function |
