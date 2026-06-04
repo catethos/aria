@@ -23,7 +23,7 @@ class StreamState(BaseModel, typing.Generic[StreamStateValueT]):
     value: StreamStateValueT
     state: typing_extensions.Literal["Pending", "Incomplete", "Complete"]
 # #########################################################################
-# Generated classes (7)
+# Generated classes (20)
 # #########################################################################
 
 class AISScores(BaseModel):
@@ -41,6 +41,53 @@ class APSScores(BaseModel):
     repetitive_cognitive: typing.Optional["VariableScore"] = Field(default=None, description='Amount of repetitive analytical/cognitive tasks within an expert-level role. High = lots of repetitive expert work.')
     communication_volume: typing.Optional["VariableScore"] = Field(default=None, description='Volume of communication, coordination, collaboration the role manages. High = heavy communication load.')
 
+class AudienceRoleRecommendations(BaseModel):
+    for_organisation: typing.Optional["GroundedText"] = None
+    for_employees_in_role: typing.Optional["GroundedText"] = None
+
+class GeneratedRoleInsight(BaseModel):
+    role_metadata: typing.Optional["RoleMetadataInput"] = None
+    tasks: typing.List["TaskItem"] = Field(description='5-15 grounded task records')
+    ais: typing.Optional["AISScores"] = None
+    aps: typing.Optional["APSScores"] = None
+    narratives: typing.Optional["RoleNarratives"] = None
+    skills_reference: typing.List["TaskSkill"] = Field(description='Canonical skill definitions normalized within this role output')
+    recommendations: typing.Optional["AudienceRoleRecommendations"] = None
+
+class GroundedClaimEvidence(BaseModel):
+    source_facts: typing.List["SourceFact"] = Field(description='Concrete facts relied on by the claim')
+    inference_trace: typing.Optional["InferenceTrace"] = None
+    confidence: typing.Optional[str] = Field(default=None, description='high, medium, or low')
+    limitations: typing.List[str] = Field(description='Missing context, assumptions, or review caveats')
+
+class GroundedText(BaseModel):
+    claim: typing.Optional[str] = None
+    evidence: typing.Optional["GroundedClaimEvidence"] = None
+
+class InferenceTrace(BaseModel):
+    trace_id: typing.Optional[str] = Field(default=None, description='Stable trace identifier')
+    source_fact_ids: typing.List[str] = Field(description='Fact ids used by this inference')
+    reasoning: typing.Optional[str] = Field(default=None, description='Short explanation linking facts to the score, mapping, narrative, or recommendation')
+    uncertainty: typing.Optional[str] = Field(default=None, description='Important uncertainty or missing context, if any')
+
+class OrgGroundedClaim(BaseModel):
+    claim: typing.Optional[str] = Field(default=None, description='Client-facing narrative text. Use direct, declarative prose with no em-dashes, hedging, or bullet points.')
+    source_fact_ids: typing.List[str] = Field(description='Fact identifiers from the supplied organisation report packet that support the claim')
+    confidence: typing.Optional[str] = Field(default=None, description='high, medium, or low')
+    limitations: typing.List[str] = Field(description='Any review caveats or assumptions that should remain internal')
+
+class OrgRedesignImplication(BaseModel):
+    aria_cell: typing.Optional[str] = None
+    potential: typing.Optional["OrgGroundedClaim"] = None
+    blind_spots: typing.Optional["OrgGroundedClaim"] = None
+    next_steps: typing.List["OrgGroundedClaim"] = Field(description='2-3 action claims for leadership to take in the next 12 months')
+
+class OrgRedesignImplications(BaseModel):
+    rows: typing.List["OrgRedesignImplication"] = Field(description='One row per populated ARIA cell only')
+
+class OrgSkillPrioritiesNarrative(BaseModel):
+    paragraphs: typing.List["OrgGroundedClaim"] = Field(description='3-5 strategy paragraphs interpreting the skill frequency table')
+
 class Recommendation(BaseModel):
     title: typing.Optional[str] = Field(default=None, description='Short actionable title, e.g. \'Deploy AI document drafting tool\'')
     description: typing.Optional[str] = Field(default=None, description='2-3 sentences explaining what to do, why, and expected impact')
@@ -53,19 +100,56 @@ class RoleAnalysis(BaseModel):
     ais: typing.Optional["AISScores"] = None
     aps: typing.Optional["APSScores"] = None
 
+class RoleMetadataInput(BaseModel):
+    role_title: typing.Optional[str] = None
+    department: typing.Optional[str] = None
+    grade: typing.Optional[str] = None
+    fte: typing.Optional[float] = None
+    location_or_jurisdiction: typing.Optional[str] = None
+    organisation_name: typing.Optional[str] = None
+    role_context: typing.Optional[str] = None
+    source_job_description: typing.Optional[str] = Field(default=None, description='The original job description supplied as the primary source input')
+
+class RoleNarratives(BaseModel):
+    automation_exposure: typing.Optional["GroundedText"] = None
+    augmentation_potential: typing.Optional["GroundedText"] = None
+    classification_explanation: typing.Optional["GroundedText"] = None
+
 class RoleRecommendations(BaseModel):
     summary: typing.Optional[str] = Field(default=None, description='2-3 sentence executive summary of the strategic recommendation for this role')
     recommendations: typing.List["Recommendation"] = Field(description='3-6 specific, actionable recommendations ordered by priority')
     estimated_productivity_gain: typing.Optional[str] = Field(default=None, description='Qualitative estimate: e.g. \'20-30% time savings on analytical tasks\'')
     transition_risk: typing.Optional[str] = Field(default=None, description='Key risk if this role is not addressed: e.g. \'Competitor advantage if manual processes persist\'')
 
+class SourceFact(BaseModel):
+    fact_id: typing.Optional[str] = Field(default=None, description='Stable identifier for the source fact')
+    source_type: typing.Optional[str] = Field(default=None, description='job_description, role_metadata, extracted_task, task_score, variable_score, computed_score, aria_classification, organisation_context, aggregate_metric, or report_config')
+    source_ref: typing.Optional[str] = Field(default=None, description='Path or pointer to the input field, task, score, aggregate, or context item')
+    fact_text: typing.Optional[str] = Field(default=None, description='Quoted or tightly paraphrased fact used to support the claim')
+    normalized_value: typing.Optional[str] = Field(default=None, description='Normalized value when relevant, serialized as text if it is not naturally a string')
+
 class TaskItem(BaseModel):
     description: typing.Optional[str] = Field(default=None, description='A discrete task extracted from the role description')
     category: typing.Optional[types.TaskCategory] = Field(default=None, description='Whether this task is automatable, augmentable, or human-essential')
+    ais_score: typing.Optional[int] = Field(default=None, description='Task-level Automation Impact Score from 0-100')
+    aps_score: typing.Optional[int] = Field(default=None, description='Task-level Augmentation Potential Score from 0-100')
+    scoring_rationale: typing.Optional[str] = Field(default=None, description='1-2 sentences explaining the task-level AIS and APS scores')
+    how_ai_changes_this: typing.Optional[str] = Field(default=None, description='How AI changes the task in the future state')
+    human_role_in_future_state: typing.Optional[str] = Field(default=None, description='What the person remains accountable for in the AI-enabled future state')
+    skills_required: typing.List["TaskSkill"] = Field(description='2-4 skills required to perform this task effectively in the AI-enabled future state')
+    evidence: typing.Optional["GroundedClaimEvidence"] = Field(default=None, description='Facts and inference trace supporting the task scores and future-state mapping')
+
+class TaskSkill(BaseModel):
+    skill_name: typing.Optional[str] = Field(default=None, description='Short canonical skill name')
+    skill_type: typing.Optional[types.SkillType] = Field(default=None, description='Whether this is an AI skill or a role-specific skill')
+    description: typing.Optional[str] = Field(default=None, description='One sentence explaining how this skill is applied in the task')
+    evidence: typing.Optional["GroundedClaimEvidence"] = Field(default=None, description='Facts and inference trace supporting why this skill is needed')
 
 class VariableScore(BaseModel):
     score: typing.Optional[int] = Field(default=None, description='Score from 0-100')
     justification: typing.Optional[str] = Field(default=None, description='2-3 sentences citing specific tasks from the role')
+    confidence: typing.Optional[str] = Field(default=None, description='high, medium, or low')
+    evidence: typing.Optional["GroundedClaimEvidence"] = Field(default=None, description='Facts and inference trace supporting this variable score')
 
 # #########################################################################
 # Generated type aliases (0)

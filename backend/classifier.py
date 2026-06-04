@@ -36,6 +36,12 @@ MATRIX = {
     ("low", "low"): "Maintain",
 }
 
+BAND_THRESHOLDS = {
+    "low": {"min": 0, "max": 39},
+    "medium": {"min": 40, "max": 69},
+    "high": {"min": 70, "max": 100},
+}
+
 AIS_VARIABLE_NAMES = {
     "cognitive_routine_level": "Cognitive routine level",
     "data_dependency": "Data dependency",
@@ -72,9 +78,15 @@ APS_VARIABLE_CODES = {
 
 
 def band(score: float) -> str:
-    if score < 45:
+    """Return the report-default score band.
+
+    The original PDF report and report-generation spec use 0-39, 40-69, and
+    70-100. Keeping the scoring classifier aligned prevents dashboard records
+    and PDF report content from drifting around boundary scores.
+    """
+    if score < BAND_THRESHOLDS["medium"]["min"]:
         return "low"
-    elif score < 65:
+    elif score < BAND_THRESHOLDS["high"]["min"]:
         return "medium"
     else:
         return "high"

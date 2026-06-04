@@ -4,16 +4,30 @@ import json
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 from sqlalchemy.orm import Session
 
-from database import init_db, get_db, Role, AISVariable, APSVariable
+from database import init_db, get_db, Role, AISVariable, APSVariable, OrgReportRun, RoleInsightRun, RenderedArtifact
 from classifier import (
     classify, AIS_VARIABLE_NAMES,
     APS_VARIABLE_NAMES,
 )
+from report_content import METHODOLOGY_VERSION, build_org_report_content, build_org_report_content_from_role_insight_runs, build_role_report_content
+from report_runs import (
+    create_org_report_run,
+    create_role_insight_run,
+    create_role_insight_run_from_generated,
+    render_report_pdf,
+    review_events_for_run,
+    transition_org_report_run,
+    transition_role_insight_run,
+)
 from baml_client.baml_client.async_client import b
+from env_loader import load_local_env
+
+
+load_local_env()
 
 
 @asynccontextmanager
@@ -26,7 +40,10 @@ app = FastAPI(title="ARIA Dashboard API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -34,11 +51,68 @@ app.add_middleware(
 
 
 class ScoreRoleRequest(BaseModel):
-    title: str
+    title: str = ""
     department: str = ""
     description: str
     grade: str = ""
     headcount: int = 1
+    location_or_jurisdiction: str | None = None
+    organisation_name: str | None = None
+    role_context: str | None = None
+
+
+class GenerateRoleInsightRequest(BaseModel):
+    job_description: str
+    role_title: str | None = None
+    department: str | None = None
+    grade: str | None = None
+    fte: float | None = None
+    location_or_jurisdiction: str | None = None
+    organisation_name: str | None = None
+    role_context: str | None = None
+
+    def to_role_generation_input(self) -> dict:
+        return {
+            "job_description": self.job_description.strip(),
+            "role_title": self.role_title,
+            "department": self.department,
+            "grade": self.grade,
+            "fte": self.fte,
+            "location_or_jurisdiction": self.location_or_jurisdiction,
+            "organisation_name": self.organisation_name,
+            "role_context": self.role_context,
+        }
+
+
+class CreateOrgReportRunRequest(BaseModel):
+    organisation_name: str = "CPFB"
+    organisation_descriptor: str = "AI impact assessment portfolio"
+    industry: str | None = None
+    geography: str | None = None
+    planning_horizon: str = "12 months"
+    transformation_priorities: list[str] = Field(default_factory=list)
+    constraints: list[str] = Field(default_factory=list)
+    ai_maturity: str = "unknown"
+    report_date: str | None = None
+    methodology_version: str | None = None
+    band_thresholds: dict | None = None
+    audience: str = "leadership"
+    tone: str = "consulting"
+    include_watermark: bool = False
+    render_pdf: bool = False
+    require_reviewed_role_runs: bool = False
+    narrative_mode: str = "deterministic"
+    require_llm_narratives: bool = False
+    allow_direct_llm_fallback: bool = True
+
+
+class RenderReportRequest(BaseModel):
+    visual_style_id: str = "pulsifi-original"
+
+
+class ReportRunTransitionRequest(BaseModel):
+    reviewer: str | None = None
+    reason: str | None = None
 
 
 AIS_FIELDS = list(AIS_VARIABLE_NAMES.keys())
@@ -48,12 +122,22 @@ APS_FIELDS = list(APS_VARIABLE_NAMES.keys())
 @app.post("/api/score-role")
 async def score_role(req: ScoreRoleRequest):
     async def event_generator():
+        title = req.title.strip() or "Untitled Role"
+        department = req.department.strip()
+        description = req.description.strip()
+        if len(description) < 40:
+            yield {
+                "event": "error",
+                "data": json.dumps({"message": "Please provide a fuller job description before scoring this role."}),
+            }
+            return
+
         yield {"event": "status", "data": json.dumps({"message": "Analysing role..."})}
 
         stream = b.stream.ScoreRole(
-            title=req.title,
-            department=req.department,
-            description=req.description,
+            title=title,
+            department=department,
+            description=description,
         )
 
         emitted_task_count = 0
@@ -61,11 +145,29 @@ async def score_role(req: ScoreRoleRequest):
         seen_aps = set()
 
         def serialize_tasks(task_items):
-            return [
-                {"description": t.description, "category": t.category.value if t.category else None}
-                for t in task_items
-                if t.description is not None
-            ]
+            serialized = []
+            for task in task_items:
+                if task.description is None:
+                    continue
+                serialized.append({
+                    "description": task.description,
+                    "category": task.category.value if task.category else None,
+                    "ais_score": getattr(task, "ais_score", None),
+                    "aps_score": getattr(task, "aps_score", None),
+                    "scoring_rationale": getattr(task, "scoring_rationale", None),
+                    "how_ai_changes_this": getattr(task, "how_ai_changes_this", None),
+                    "human_role_in_future_state": getattr(task, "human_role_in_future_state", None),
+                    "skills_required": [
+                        {
+                            "skill_name": skill.skill_name,
+                            "skill_type": skill.skill_type.value if skill.skill_type else None,
+                            "description": skill.description,
+                        }
+                        for skill in (getattr(task, "skills_required", None) or [])
+                        if skill.skill_name is not None
+                    ],
+                })
+            return serialized
 
         async for partial in stream:
             # Only emit tasks that are NOT the last element (last may be incomplete)
@@ -143,8 +245,8 @@ async def score_role(req: ScoreRoleRequest):
         )
 
         recs_stream = b.stream.GenerateRecommendations(
-            title=req.title,
-            department=req.department,
+            title=title,
+            department=department,
             classification=result.classification,
             risk_level=result.risk_level,
             ais_composite=result.ais_composite,
@@ -239,18 +341,19 @@ async def score_role(req: ScoreRoleRequest):
         }
 
         serialized_tasks = [
-            {"description": t.description, "category": t.category.value if t.category else None}
-            for t in final.tasks if t.description
+            task
+            for task in serialize_tasks(final.tasks)
+            if task.get("description")
         ]
 
         db = next(get_db())
         try:
             role = Role(
-                title=req.title,
-                department=req.department,
+                title=title,
+                department=department,
                 grade=req.grade,
                 headcount=req.headcount,
-                description=req.description,
+                description=description,
                 tasks=json.dumps(serialized_tasks),
                 ais_composite=result.ais_composite,
                 aps_composite=result.aps_composite,
@@ -307,6 +410,73 @@ async def score_role(req: ScoreRoleRequest):
     return EventSourceResponse(event_generator())
 
 
+@app.post("/api/role-insights/generate")
+async def generate_role_insight(req: GenerateRoleInsightRequest):
+    description = req.job_description.strip()
+    if len(description) < 40:
+        raise HTTPException(status_code=400, detail="Please provide a fuller job description before generating a role insight.")
+
+    generated = await b.GenerateRoleInsight(
+        job_description=description,
+        role_title=req.role_title,
+        department=req.department,
+        grade=req.grade,
+        fte=req.fte,
+        location_or_jurisdiction=req.location_or_jurisdiction,
+        organisation_name=req.organisation_name,
+        role_context=req.role_context,
+    )
+    computed = classify(generated)
+    payload = generated.model_dump(mode="json")
+    payload.setdefault("role_metadata", {})
+    payload["role_metadata"]["source_job_description"] = description
+    payload["computed_scores"] = {
+        "ais_composite": computed.ais_composite,
+        "aps_composite": computed.aps_composite,
+        "ais_band": computed.ais_band,
+        "aps_band": computed.aps_band,
+        "aria_classification": computed.classification,
+        "risk_level": computed.risk_level,
+    }
+    payload["provenance"] = {
+        "model": "baml:GenerateRoleInsight",
+        "methodology_version": METHODOLOGY_VERSION,
+        "source": "llm",
+        "review_status": "unreviewed",
+    }
+    return payload
+
+
+@app.post("/api/role-insights/runs")
+async def create_generated_role_insight_run(
+    req: GenerateRoleInsightRequest,
+    render_pdf: bool = Query(False),
+    db: Session = Depends(get_db),
+):
+    role_input = req.to_role_generation_input()
+    if len(role_input["job_description"]) < 40:
+        raise HTTPException(status_code=400, detail="Please provide a fuller job description before generating a role insight.")
+
+    generated = await b.GenerateRoleInsight(
+        job_description=role_input["job_description"],
+        role_title=role_input["role_title"],
+        department=role_input["department"],
+        grade=role_input["grade"],
+        fte=role_input["fte"],
+        location_or_jurisdiction=role_input["location_or_jurisdiction"],
+        organisation_name=role_input["organisation_name"],
+        role_context=role_input["role_context"],
+    )
+    run = create_role_insight_run_from_generated(db, role_input, generated)
+    response = run.to_dict(include_output=True)
+    if render_pdf:
+        try:
+            response["artifact"] = render_report_pdf(db, "role", run.id).to_dict()
+        except RuntimeError as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return response
+
+
 @app.get("/api/roles")
 def list_roles(dept: str = Query(None), db: Session = Depends(get_db)):
     query = db.query(Role)
@@ -322,6 +492,222 @@ def get_role(role_id: int, db: Session = Depends(get_db)):
     if not role:
         raise HTTPException(status_code=404, detail="Role not found")
     return role.to_detail_dict()
+
+
+@app.get("/api/reports/roles/{role_id}/content")
+def get_role_report_content(role_id: int, db: Session = Depends(get_db)):
+    role = db.query(Role).filter(Role.id == role_id).first()
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    stable_run = _latest_stable_role_run(db, role.id)
+    if stable_run is not None:
+        return json.loads(stable_run.output_json)
+    return build_role_report_content(role)
+
+
+@app.get("/api/reports/org/content")
+def get_org_report_content(
+    organisation_name: str = Query("CPFB"),
+    db: Session = Depends(get_db),
+):
+    roles = db.query(Role).order_by(Role.id.asc()).all()
+    stable_runs = _stable_role_runs_for_roles(db, roles)
+    if stable_runs:
+        return build_org_report_content_from_role_insight_runs(
+            stable_runs,
+            organisation_context={
+                "organisation_name": organisation_name,
+                "organisation_descriptor": "AI impact assessment portfolio",
+            },
+            report_config={},
+        )
+    return build_org_report_content(
+        roles,
+        organisation_context={
+            "organisation_name": organisation_name,
+            "organisation_descriptor": "AI impact assessment portfolio",
+        },
+        report_config={},
+    )
+
+
+@app.post("/api/reports/roles/{role_id}/runs")
+def create_role_report_run(
+    role_id: int,
+    render_pdf: bool = Query(False),
+    db: Session = Depends(get_db),
+):
+    role = db.query(Role).filter(Role.id == role_id).first()
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+
+    run = create_role_insight_run(db, role)
+    response = run.to_dict(include_output=True)
+    if render_pdf:
+        try:
+            response["artifact"] = render_report_pdf(db, "role", run.id).to_dict()
+        except RuntimeError as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return response
+
+
+@app.get("/api/report-runs/roles/{run_id}")
+def get_role_report_run(run_id: str, db: Session = Depends(get_db)):
+    run = db.get(RoleInsightRun, run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="Role report run not found")
+    payload = run.to_dict(include_output=True)
+    payload["review_events"] = [
+        event.to_dict() for event in review_events_for_run(db, "role_insight_run", run_id)
+    ]
+    return payload
+
+
+@app.post("/api/report-runs/roles/{run_id}/review")
+def review_role_report_run(
+    run_id: str,
+    req: ReportRunTransitionRequest | None = None,
+    db: Session = Depends(get_db),
+):
+    req = req or ReportRunTransitionRequest()
+    try:
+        run = transition_role_insight_run(db, run_id, "reviewed", reviewer=req.reviewer, reason=req.reason)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return run.to_dict(include_output=True)
+
+
+@app.post("/api/report-runs/roles/{run_id}/freeze")
+def freeze_role_report_run(
+    run_id: str,
+    req: ReportRunTransitionRequest | None = None,
+    db: Session = Depends(get_db),
+):
+    req = req or ReportRunTransitionRequest()
+    try:
+        run = transition_role_insight_run(db, run_id, "frozen", reviewer=req.reviewer, reason=req.reason)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return run.to_dict(include_output=True)
+
+
+@app.post("/api/report-runs/roles/{run_id}/render")
+def render_role_report_run(
+    run_id: str,
+    req: RenderReportRequest | None = None,
+    db: Session = Depends(get_db),
+):
+    req = req or RenderReportRequest()
+    try:
+        return render_report_pdf(db, "role", run_id, visual_style_id=req.visual_style_id).to_dict()
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.post("/api/reports/org/runs")
+def create_organisation_report_run(
+    req: CreateOrgReportRunRequest,
+    db: Session = Depends(get_db),
+):
+    roles = db.query(Role).order_by(Role.id.asc()).all()
+    run = create_org_report_run(
+        db,
+        roles,
+        organisation_context={
+            "organisation_name": req.organisation_name,
+            "organisation_descriptor": req.organisation_descriptor,
+            "industry": req.industry,
+            "geography": req.geography,
+            "planning_horizon": req.planning_horizon,
+            "transformation_priorities": req.transformation_priorities,
+            "constraints": req.constraints,
+            "ai_maturity": req.ai_maturity,
+        },
+        report_config={
+            "report_date": req.report_date,
+            "methodology_version": req.methodology_version,
+            "band_thresholds": req.band_thresholds,
+            "audience": req.audience,
+            "tone": req.tone,
+            "include_watermark": req.include_watermark,
+            "narrative_mode": req.narrative_mode,
+            "require_llm_narratives": req.require_llm_narratives,
+            "allow_direct_llm_fallback": req.allow_direct_llm_fallback,
+        },
+        require_reviewed_role_runs=req.require_reviewed_role_runs,
+    )
+    response = run.to_dict(include_output=True)
+    if req.render_pdf:
+        try:
+            response["artifact"] = render_report_pdf(db, "organisation", run.id).to_dict()
+        except RuntimeError as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return response
+
+
+@app.get("/api/report-runs/org/{run_id}")
+def get_organisation_report_run(run_id: str, db: Session = Depends(get_db)):
+    run = db.get(OrgReportRun, run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="Organisation report run not found")
+    payload = run.to_dict(include_output=True)
+    payload["review_events"] = [
+        event.to_dict() for event in review_events_for_run(db, "org_report_run", run_id)
+    ]
+    return payload
+
+
+@app.post("/api/report-runs/org/{run_id}/review")
+def review_organisation_report_run(
+    run_id: str,
+    req: ReportRunTransitionRequest | None = None,
+    db: Session = Depends(get_db),
+):
+    req = req or ReportRunTransitionRequest()
+    try:
+        run = transition_org_report_run(db, run_id, "reviewed", reviewer=req.reviewer, reason=req.reason)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return run.to_dict(include_output=True)
+
+
+@app.post("/api/report-runs/org/{run_id}/freeze")
+def freeze_organisation_report_run(
+    run_id: str,
+    req: ReportRunTransitionRequest | None = None,
+    db: Session = Depends(get_db),
+):
+    req = req or ReportRunTransitionRequest()
+    try:
+        run = transition_org_report_run(db, run_id, "frozen", reviewer=req.reviewer, reason=req.reason)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return run.to_dict(include_output=True)
+
+
+@app.post("/api/report-runs/org/{run_id}/render")
+def render_organisation_report_run(
+    run_id: str,
+    req: RenderReportRequest | None = None,
+    db: Session = Depends(get_db),
+):
+    req = req or RenderReportRequest()
+    try:
+        return render_report_pdf(db, "organisation", run_id, visual_style_id=req.visual_style_id).to_dict()
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.get("/api/report-artifacts/{artifact_id}")
+def get_report_artifact(artifact_id: str, db: Session = Depends(get_db)):
+    artifact = db.get(RenderedArtifact, artifact_id)
+    if not artifact:
+        raise HTTPException(status_code=404, detail="Rendered artifact not found")
+    return artifact.to_dict()
 
 
 @app.get("/api/summary")
@@ -407,3 +793,24 @@ def delete_role(role_id: int, db: Session = Depends(get_db)):
     db.delete(role)
     db.commit()
     return {"ok": True}
+
+
+def _latest_stable_role_run(db: Session, role_id: int) -> RoleInsightRun | None:
+    return (
+        db.query(RoleInsightRun)
+        .filter(RoleInsightRun.role_id == role_id)
+        .filter(RoleInsightRun.methodology_version == METHODOLOGY_VERSION)
+        .filter(RoleInsightRun.status.in_(("frozen", "reviewed")))
+        .order_by(RoleInsightRun.generated_at.desc())
+        .first()
+    )
+
+
+def _stable_role_runs_for_roles(db: Session, roles: list[Role]) -> list[RoleInsightRun]:
+    stable_runs = []
+    for role in roles:
+        run = _latest_stable_role_run(db, role.id)
+        if run is None:
+            return []
+        stable_runs.append(run)
+    return stable_runs

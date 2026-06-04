@@ -1,0 +1,47 @@
+# Local secrets and agent state
+.env
+.env.*
+!.env.example
+.agent/
+.claude/
+
+# OS/editor noise
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+build/
+dist/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.local
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Runtime databases and backups
+aria.db
+*.db-journal
+*.db-wal
+*.db-shm
+backend/aria.db.backup-*
+
+# Generated/debug artifacts
+debug_baml/
+backend/baml_smoke_client/
+direct_prompt_review.*
+direct_prompt_review_files/
+reports/generated/

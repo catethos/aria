@@ -37,7 +37,7 @@ def get_checks(checks: typing.Dict[CheckName, Check]) -> typing.List[Check]:
 def all_succeeded(checks: typing.Dict[CheckName, Check]) -> bool:
     return all(check.status == "succeeded" for check in get_checks(checks))
 # #########################################################################
-# Generated enums (3)
+# Generated enums (4)
 # #########################################################################
 
 class RecommendationCategory(str, Enum):
@@ -52,13 +52,17 @@ class RecommendationPriority(str, Enum):
     Medium = "Medium"
     Low = "Low"
 
+class SkillType(str, Enum):
+    AISkill = "AISkill"
+    RoleSpecificSkill = "RoleSpecificSkill"
+
 class TaskCategory(str, Enum):
     Automatable = "Automatable"
     Augmentable = "Augmentable"
     HumanEssential = "HumanEssential"
 
 # #########################################################################
-# Generated classes (7)
+# Generated classes (20)
 # #########################################################################
 
 class AISScores(BaseModel):
@@ -76,6 +80,53 @@ class APSScores(BaseModel):
     repetitive_cognitive: "VariableScore" = Field(description='Amount of repetitive analytical/cognitive tasks within an expert-level role. High = lots of repetitive expert work.')
     communication_volume: "VariableScore" = Field(description='Volume of communication, coordination, collaboration the role manages. High = heavy communication load.')
 
+class AudienceRoleRecommendations(BaseModel):
+    for_organisation: "GroundedText"
+    for_employees_in_role: "GroundedText"
+
+class GeneratedRoleInsight(BaseModel):
+    role_metadata: "RoleMetadataInput"
+    tasks: typing.List["TaskItem"] = Field(description='5-15 grounded task records')
+    ais: "AISScores"
+    aps: "APSScores"
+    narratives: "RoleNarratives"
+    skills_reference: typing.List["TaskSkill"] = Field(description='Canonical skill definitions normalized within this role output')
+    recommendations: "AudienceRoleRecommendations"
+
+class GroundedClaimEvidence(BaseModel):
+    source_facts: typing.List["SourceFact"] = Field(description='Concrete facts relied on by the claim')
+    inference_trace: "InferenceTrace"
+    confidence: str = Field(description='high, medium, or low')
+    limitations: typing.List[str] = Field(description='Missing context, assumptions, or review caveats')
+
+class GroundedText(BaseModel):
+    claim: str
+    evidence: "GroundedClaimEvidence"
+
+class InferenceTrace(BaseModel):
+    trace_id: str = Field(description='Stable trace identifier')
+    source_fact_ids: typing.List[str] = Field(description='Fact ids used by this inference')
+    reasoning: str = Field(description='Short explanation linking facts to the score, mapping, narrative, or recommendation')
+    uncertainty: typing.Optional[str] = Field(default=None, description='Important uncertainty or missing context, if any')
+
+class OrgGroundedClaim(BaseModel):
+    claim: str = Field(description='Client-facing narrative text. Use direct, declarative prose with no em-dashes, hedging, or bullet points.')
+    source_fact_ids: typing.List[str] = Field(description='Fact identifiers from the supplied organisation report packet that support the claim')
+    confidence: str = Field(description='high, medium, or low')
+    limitations: typing.List[str] = Field(description='Any review caveats or assumptions that should remain internal')
+
+class OrgRedesignImplication(BaseModel):
+    aria_cell: str
+    potential: "OrgGroundedClaim"
+    blind_spots: "OrgGroundedClaim"
+    next_steps: typing.List["OrgGroundedClaim"] = Field(description='2-3 action claims for leadership to take in the next 12 months')
+
+class OrgRedesignImplications(BaseModel):
+    rows: typing.List["OrgRedesignImplication"] = Field(description='One row per populated ARIA cell only')
+
+class OrgSkillPrioritiesNarrative(BaseModel):
+    paragraphs: typing.List["OrgGroundedClaim"] = Field(description='3-5 strategy paragraphs interpreting the skill frequency table')
+
 class Recommendation(BaseModel):
     title: str = Field(description='Short actionable title, e.g. \'Deploy AI document drafting tool\'')
     description: str = Field(description='2-3 sentences explaining what to do, why, and expected impact')
@@ -88,19 +139,56 @@ class RoleAnalysis(BaseModel):
     ais: "AISScores"
     aps: "APSScores"
 
+class RoleMetadataInput(BaseModel):
+    role_title: typing.Optional[str] = None
+    department: typing.Optional[str] = None
+    grade: typing.Optional[str] = None
+    fte: typing.Optional[float] = None
+    location_or_jurisdiction: typing.Optional[str] = None
+    organisation_name: typing.Optional[str] = None
+    role_context: typing.Optional[str] = None
+    source_job_description: str = Field(description='The original job description supplied as the primary source input')
+
+class RoleNarratives(BaseModel):
+    automation_exposure: "GroundedText"
+    augmentation_potential: "GroundedText"
+    classification_explanation: "GroundedText"
+
 class RoleRecommendations(BaseModel):
     summary: str = Field(description='2-3 sentence executive summary of the strategic recommendation for this role')
     recommendations: typing.List["Recommendation"] = Field(description='3-6 specific, actionable recommendations ordered by priority')
     estimated_productivity_gain: str = Field(description='Qualitative estimate: e.g. \'20-30% time savings on analytical tasks\'')
     transition_risk: str = Field(description='Key risk if this role is not addressed: e.g. \'Competitor advantage if manual processes persist\'')
 
+class SourceFact(BaseModel):
+    fact_id: str = Field(description='Stable identifier for the source fact')
+    source_type: str = Field(description='job_description, role_metadata, extracted_task, task_score, variable_score, computed_score, aria_classification, organisation_context, aggregate_metric, or report_config')
+    source_ref: str = Field(description='Path or pointer to the input field, task, score, aggregate, or context item')
+    fact_text: str = Field(description='Quoted or tightly paraphrased fact used to support the claim')
+    normalized_value: typing.Optional[str] = Field(default=None, description='Normalized value when relevant, serialized as text if it is not naturally a string')
+
 class TaskItem(BaseModel):
     description: str = Field(description='A discrete task extracted from the role description')
     category: TaskCategory = Field(description='Whether this task is automatable, augmentable, or human-essential')
+    ais_score: int = Field(description='Task-level Automation Impact Score from 0-100')
+    aps_score: int = Field(description='Task-level Augmentation Potential Score from 0-100')
+    scoring_rationale: str = Field(description='1-2 sentences explaining the task-level AIS and APS scores')
+    how_ai_changes_this: str = Field(description='How AI changes the task in the future state')
+    human_role_in_future_state: str = Field(description='What the person remains accountable for in the AI-enabled future state')
+    skills_required: typing.List["TaskSkill"] = Field(description='2-4 skills required to perform this task effectively in the AI-enabled future state')
+    evidence: "GroundedClaimEvidence" = Field(description='Facts and inference trace supporting the task scores and future-state mapping')
+
+class TaskSkill(BaseModel):
+    skill_name: str = Field(description='Short canonical skill name')
+    skill_type: SkillType = Field(description='Whether this is an AI skill or a role-specific skill')
+    description: str = Field(description='One sentence explaining how this skill is applied in the task')
+    evidence: "GroundedClaimEvidence" = Field(description='Facts and inference trace supporting why this skill is needed')
 
 class VariableScore(BaseModel):
     score: int = Field(description='Score from 0-100')
     justification: str = Field(description='2-3 sentences citing specific tasks from the role')
+    confidence: str = Field(description='high, medium, or low')
+    evidence: "GroundedClaimEvidence" = Field(description='Facts and inference trace supporting this variable score')
 
 # #########################################################################
 # Generated type aliases (0)

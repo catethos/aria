@@ -20,13 +20,13 @@ from .globals import DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIM
 class TypeBuilder(type_builder.TypeBuilder):
     def __init__(self):
         super().__init__(classes=set(
-          ["AISScores","APSScores","Recommendation","RoleAnalysis","RoleRecommendations","TaskItem","VariableScore",]
+          ["AISScores","APSScores","AudienceRoleRecommendations","GeneratedRoleInsight","GroundedClaimEvidence","GroundedText","InferenceTrace","OrgGroundedClaim","OrgRedesignImplication","OrgRedesignImplications","OrgSkillPrioritiesNarrative","Recommendation","RoleAnalysis","RoleMetadataInput","RoleNarratives","RoleRecommendations","SourceFact","TaskItem","TaskSkill","VariableScore",]
         ), enums=set(
-          ["RecommendationCategory","RecommendationPriority","TaskCategory",]
+          ["RecommendationCategory","RecommendationPriority","SkillType","TaskCategory",]
         ), runtime=DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIME)
 
     # #########################################################################
-    # Generated enums 3
+    # Generated enums 4
     # #########################################################################
 
     @property
@@ -38,12 +38,16 @@ class TypeBuilder(type_builder.TypeBuilder):
         return RecommendationPriorityViewer(self)
 
     @property
+    def SkillType(self) -> "SkillTypeViewer":
+        return SkillTypeViewer(self)
+
+    @property
     def TaskCategory(self) -> "TaskCategoryViewer":
         return TaskCategoryViewer(self)
 
 
     # #########################################################################
-    # Generated classes 7
+    # Generated classes 20
     # #########################################################################
 
     @property
@@ -55,6 +59,42 @@ class TypeBuilder(type_builder.TypeBuilder):
         return APSScoresViewer(self)
 
     @property
+    def AudienceRoleRecommendations(self) -> "AudienceRoleRecommendationsViewer":
+        return AudienceRoleRecommendationsViewer(self)
+
+    @property
+    def GeneratedRoleInsight(self) -> "GeneratedRoleInsightViewer":
+        return GeneratedRoleInsightViewer(self)
+
+    @property
+    def GroundedClaimEvidence(self) -> "GroundedClaimEvidenceViewer":
+        return GroundedClaimEvidenceViewer(self)
+
+    @property
+    def GroundedText(self) -> "GroundedTextViewer":
+        return GroundedTextViewer(self)
+
+    @property
+    def InferenceTrace(self) -> "InferenceTraceViewer":
+        return InferenceTraceViewer(self)
+
+    @property
+    def OrgGroundedClaim(self) -> "OrgGroundedClaimViewer":
+        return OrgGroundedClaimViewer(self)
+
+    @property
+    def OrgRedesignImplication(self) -> "OrgRedesignImplicationViewer":
+        return OrgRedesignImplicationViewer(self)
+
+    @property
+    def OrgRedesignImplications(self) -> "OrgRedesignImplicationsViewer":
+        return OrgRedesignImplicationsViewer(self)
+
+    @property
+    def OrgSkillPrioritiesNarrative(self) -> "OrgSkillPrioritiesNarrativeViewer":
+        return OrgSkillPrioritiesNarrativeViewer(self)
+
+    @property
     def Recommendation(self) -> "RecommendationViewer":
         return RecommendationViewer(self)
 
@@ -63,12 +103,28 @@ class TypeBuilder(type_builder.TypeBuilder):
         return RoleAnalysisViewer(self)
 
     @property
+    def RoleMetadataInput(self) -> "RoleMetadataInputViewer":
+        return RoleMetadataInputViewer(self)
+
+    @property
+    def RoleNarratives(self) -> "RoleNarrativesViewer":
+        return RoleNarrativesViewer(self)
+
+    @property
     def RoleRecommendations(self) -> "RoleRecommendationsViewer":
         return RoleRecommendationsViewer(self)
 
     @property
+    def SourceFact(self) -> "SourceFactViewer":
+        return SourceFactViewer(self)
+
+    @property
     def TaskItem(self) -> "TaskItemViewer":
         return TaskItemViewer(self)
+
+    @property
+    def TaskSkill(self) -> "TaskSkillViewer":
+        return TaskSkillViewer(self)
 
     @property
     def VariableScore(self) -> "VariableScoreViewer":
@@ -77,7 +133,7 @@ class TypeBuilder(type_builder.TypeBuilder):
 
 
 # #########################################################################
-# Generated enums 3
+# Generated enums 4
 # #########################################################################
 
 class RecommendationCategoryAst:
@@ -180,6 +236,48 @@ class RecommendationPriorityValues:
     
 
 
+class SkillTypeAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.enum("SkillType")
+        self._values: typing.Set[str] = set([  "AISkill",  "RoleSpecificSkill",  ])
+        self._vals = SkillTypeValues(self._bldr, self._values)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def values(self) -> "SkillTypeValues":
+        return self._vals
+
+
+class SkillTypeViewer(SkillTypeAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_values(self) -> typing.List[typing.Tuple[str, type_builder.EnumValueViewer]]:
+        return [(name, type_builder.EnumValueViewer(self._bldr.value(name))) for name in self._values]
+    
+
+class SkillTypeValues:
+    def __init__(self, enum_bldr: baml_py.EnumBuilder, values: typing.Set[str]):
+        self.__bldr = enum_bldr
+        self.__values = values # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def AISkill(self) -> type_builder.EnumValueViewer:
+        return type_builder.EnumValueViewer(self.__bldr.value("AISkill"))
+    
+    @property
+    def RoleSpecificSkill(self) -> type_builder.EnumValueViewer:
+        return type_builder.EnumValueViewer(self.__bldr.value("RoleSpecificSkill"))
+    
+    
+
+
 class TaskCategoryAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
@@ -228,7 +326,7 @@ class TaskCategoryValues:
 
 
 # #########################################################################
-# Generated classes 7
+# Generated classes 20
 # #########################################################################
 
 class AISScoresAst:
@@ -345,6 +443,437 @@ class APSScoresProperties:
     
 
 
+class AudienceRoleRecommendationsAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("AudienceRoleRecommendations")
+        self._properties: typing.Set[str] = set([  "for_organisation",  "for_employees_in_role",  ])
+        self._props = AudienceRoleRecommendationsProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "AudienceRoleRecommendationsProperties":
+        return self._props
+
+
+class AudienceRoleRecommendationsViewer(AudienceRoleRecommendationsAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class AudienceRoleRecommendationsProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def for_organisation(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("for_organisation"))
+    
+    @property
+    def for_employees_in_role(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("for_employees_in_role"))
+    
+    
+
+
+class GeneratedRoleInsightAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("GeneratedRoleInsight")
+        self._properties: typing.Set[str] = set([  "role_metadata",  "tasks",  "ais",  "aps",  "narratives",  "skills_reference",  "recommendations",  ])
+        self._props = GeneratedRoleInsightProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "GeneratedRoleInsightProperties":
+        return self._props
+
+
+class GeneratedRoleInsightViewer(GeneratedRoleInsightAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class GeneratedRoleInsightProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def role_metadata(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("role_metadata"))
+    
+    @property
+    def tasks(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("tasks"))
+    
+    @property
+    def ais(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("ais"))
+    
+    @property
+    def aps(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("aps"))
+    
+    @property
+    def narratives(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("narratives"))
+    
+    @property
+    def skills_reference(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("skills_reference"))
+    
+    @property
+    def recommendations(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("recommendations"))
+    
+    
+
+
+class GroundedClaimEvidenceAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("GroundedClaimEvidence")
+        self._properties: typing.Set[str] = set([  "source_facts",  "inference_trace",  "confidence",  "limitations",  ])
+        self._props = GroundedClaimEvidenceProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "GroundedClaimEvidenceProperties":
+        return self._props
+
+
+class GroundedClaimEvidenceViewer(GroundedClaimEvidenceAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class GroundedClaimEvidenceProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def source_facts(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("source_facts"))
+    
+    @property
+    def inference_trace(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("inference_trace"))
+    
+    @property
+    def confidence(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("confidence"))
+    
+    @property
+    def limitations(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("limitations"))
+    
+    
+
+
+class GroundedTextAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("GroundedText")
+        self._properties: typing.Set[str] = set([  "claim",  "evidence",  ])
+        self._props = GroundedTextProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "GroundedTextProperties":
+        return self._props
+
+
+class GroundedTextViewer(GroundedTextAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class GroundedTextProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def claim(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("claim"))
+    
+    @property
+    def evidence(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("evidence"))
+    
+    
+
+
+class InferenceTraceAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("InferenceTrace")
+        self._properties: typing.Set[str] = set([  "trace_id",  "source_fact_ids",  "reasoning",  "uncertainty",  ])
+        self._props = InferenceTraceProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "InferenceTraceProperties":
+        return self._props
+
+
+class InferenceTraceViewer(InferenceTraceAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class InferenceTraceProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def trace_id(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("trace_id"))
+    
+    @property
+    def source_fact_ids(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("source_fact_ids"))
+    
+    @property
+    def reasoning(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("reasoning"))
+    
+    @property
+    def uncertainty(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("uncertainty"))
+    
+    
+
+
+class OrgGroundedClaimAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("OrgGroundedClaim")
+        self._properties: typing.Set[str] = set([  "claim",  "source_fact_ids",  "confidence",  "limitations",  ])
+        self._props = OrgGroundedClaimProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "OrgGroundedClaimProperties":
+        return self._props
+
+
+class OrgGroundedClaimViewer(OrgGroundedClaimAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class OrgGroundedClaimProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def claim(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("claim"))
+    
+    @property
+    def source_fact_ids(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("source_fact_ids"))
+    
+    @property
+    def confidence(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("confidence"))
+    
+    @property
+    def limitations(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("limitations"))
+    
+    
+
+
+class OrgRedesignImplicationAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("OrgRedesignImplication")
+        self._properties: typing.Set[str] = set([  "aria_cell",  "potential",  "blind_spots",  "next_steps",  ])
+        self._props = OrgRedesignImplicationProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "OrgRedesignImplicationProperties":
+        return self._props
+
+
+class OrgRedesignImplicationViewer(OrgRedesignImplicationAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class OrgRedesignImplicationProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def aria_cell(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("aria_cell"))
+    
+    @property
+    def potential(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("potential"))
+    
+    @property
+    def blind_spots(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("blind_spots"))
+    
+    @property
+    def next_steps(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("next_steps"))
+    
+    
+
+
+class OrgRedesignImplicationsAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("OrgRedesignImplications")
+        self._properties: typing.Set[str] = set([  "rows",  ])
+        self._props = OrgRedesignImplicationsProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "OrgRedesignImplicationsProperties":
+        return self._props
+
+
+class OrgRedesignImplicationsViewer(OrgRedesignImplicationsAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class OrgRedesignImplicationsProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def rows(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("rows"))
+    
+    
+
+
+class OrgSkillPrioritiesNarrativeAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("OrgSkillPrioritiesNarrative")
+        self._properties: typing.Set[str] = set([  "paragraphs",  ])
+        self._props = OrgSkillPrioritiesNarrativeProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "OrgSkillPrioritiesNarrativeProperties":
+        return self._props
+
+
+class OrgSkillPrioritiesNarrativeViewer(OrgSkillPrioritiesNarrativeAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class OrgSkillPrioritiesNarrativeProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def paragraphs(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("paragraphs"))
+    
+    
+
+
 class RecommendationAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
@@ -447,6 +976,120 @@ class RoleAnalysisProperties:
     
 
 
+class RoleMetadataInputAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("RoleMetadataInput")
+        self._properties: typing.Set[str] = set([  "role_title",  "department",  "grade",  "fte",  "location_or_jurisdiction",  "organisation_name",  "role_context",  "source_job_description",  ])
+        self._props = RoleMetadataInputProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "RoleMetadataInputProperties":
+        return self._props
+
+
+class RoleMetadataInputViewer(RoleMetadataInputAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class RoleMetadataInputProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def role_title(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("role_title"))
+    
+    @property
+    def department(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("department"))
+    
+    @property
+    def grade(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("grade"))
+    
+    @property
+    def fte(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("fte"))
+    
+    @property
+    def location_or_jurisdiction(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("location_or_jurisdiction"))
+    
+    @property
+    def organisation_name(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("organisation_name"))
+    
+    @property
+    def role_context(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("role_context"))
+    
+    @property
+    def source_job_description(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("source_job_description"))
+    
+    
+
+
+class RoleNarrativesAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("RoleNarratives")
+        self._properties: typing.Set[str] = set([  "automation_exposure",  "augmentation_potential",  "classification_explanation",  ])
+        self._props = RoleNarrativesProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "RoleNarrativesProperties":
+        return self._props
+
+
+class RoleNarrativesViewer(RoleNarrativesAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class RoleNarrativesProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def automation_exposure(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("automation_exposure"))
+    
+    @property
+    def augmentation_potential(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("augmentation_potential"))
+    
+    @property
+    def classification_explanation(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("classification_explanation"))
+    
+    
+
+
 class RoleRecommendationsAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
@@ -498,11 +1141,66 @@ class RoleRecommendationsProperties:
     
 
 
+class SourceFactAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("SourceFact")
+        self._properties: typing.Set[str] = set([  "fact_id",  "source_type",  "source_ref",  "fact_text",  "normalized_value",  ])
+        self._props = SourceFactProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "SourceFactProperties":
+        return self._props
+
+
+class SourceFactViewer(SourceFactAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class SourceFactProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def fact_id(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("fact_id"))
+    
+    @property
+    def source_type(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("source_type"))
+    
+    @property
+    def source_ref(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("source_ref"))
+    
+    @property
+    def fact_text(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("fact_text"))
+    
+    @property
+    def normalized_value(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("normalized_value"))
+    
+    
+
+
 class TaskItemAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
         self._bldr = _tb.class_("TaskItem")
-        self._properties: typing.Set[str] = set([  "description",  "category",  ])
+        self._properties: typing.Set[str] = set([  "description",  "category",  "ais_score",  "aps_score",  "scoring_rationale",  "how_ai_changes_this",  "human_role_in_future_state",  "skills_required",  "evidence",  ])
         self._props = TaskItemProperties(self._bldr, self._properties)
 
     def type(self) -> baml_py.FieldType:
@@ -538,6 +1236,85 @@ class TaskItemProperties:
     def category(self) -> type_builder.ClassPropertyViewer:
         return type_builder.ClassPropertyViewer(self.__bldr.property("category"))
     
+    @property
+    def ais_score(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("ais_score"))
+    
+    @property
+    def aps_score(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("aps_score"))
+    
+    @property
+    def scoring_rationale(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("scoring_rationale"))
+    
+    @property
+    def how_ai_changes_this(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("how_ai_changes_this"))
+    
+    @property
+    def human_role_in_future_state(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("human_role_in_future_state"))
+    
+    @property
+    def skills_required(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("skills_required"))
+    
+    @property
+    def evidence(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("evidence"))
+    
+    
+
+
+class TaskSkillAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("TaskSkill")
+        self._properties: typing.Set[str] = set([  "skill_name",  "skill_type",  "description",  "evidence",  ])
+        self._props = TaskSkillProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "TaskSkillProperties":
+        return self._props
+
+
+class TaskSkillViewer(TaskSkillAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class TaskSkillProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def skill_name(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("skill_name"))
+    
+    @property
+    def skill_type(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("skill_type"))
+    
+    @property
+    def description(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("description"))
+    
+    @property
+    def evidence(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("evidence"))
+    
     
 
 
@@ -545,7 +1322,7 @@ class VariableScoreAst:
     def __init__(self, tb: type_builder.TypeBuilder):
         _tb = tb._tb # type: ignore (we know how to use this private attribute)
         self._bldr = _tb.class_("VariableScore")
-        self._properties: typing.Set[str] = set([  "score",  "justification",  ])
+        self._properties: typing.Set[str] = set([  "score",  "justification",  "confidence",  "evidence",  ])
         self._props = VariableScoreProperties(self._bldr, self._properties)
 
     def type(self) -> baml_py.FieldType:
@@ -580,6 +1357,14 @@ class VariableScoreProperties:
     @property
     def justification(self) -> type_builder.ClassPropertyViewer:
         return type_builder.ClassPropertyViewer(self.__bldr.property("justification"))
+    
+    @property
+    def confidence(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("confidence"))
+    
+    @property
+    def evidence(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("evidence"))
     
     
 

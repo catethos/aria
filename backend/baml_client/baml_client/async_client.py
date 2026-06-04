@@ -82,6 +82,66 @@ class BamlAsyncClient:
     def parse_stream(self):
       return self.__llm_stream_parser
 
+    async def GenerateOrgBottomLine(self, organisation_name: str,workforce_snapshot_json: str,aria_matrix_json: str,source_facts_json: str,
+        baml_options: BamlCallOptions = {},
+    ) -> types.OrgGroundedClaim:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            __stream__ = self.stream.GenerateOrgBottomLine(organisation_name=organisation_name,workforce_snapshot_json=workforce_snapshot_json,aria_matrix_json=aria_matrix_json,source_facts_json=source_facts_json,
+                baml_options=baml_options)
+            return await __stream__.get_final_response()
+        else:
+            # Original non-streaming code
+            __result__ = await self.__options.merge_options(baml_options).call_function_async(function_name="GenerateOrgBottomLine", args={
+                "organisation_name": organisation_name,"workforce_snapshot_json": workforce_snapshot_json,"aria_matrix_json": aria_matrix_json,"source_facts_json": source_facts_json,
+            })
+            return typing.cast(types.OrgGroundedClaim, __result__.cast_to(types, types, stream_types, False, __runtime__))
+    async def GenerateOrgRedesignImplications(self, populated_cells_json: str,source_facts_json: str,
+        baml_options: BamlCallOptions = {},
+    ) -> types.OrgRedesignImplications:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            __stream__ = self.stream.GenerateOrgRedesignImplications(populated_cells_json=populated_cells_json,source_facts_json=source_facts_json,
+                baml_options=baml_options)
+            return await __stream__.get_final_response()
+        else:
+            # Original non-streaming code
+            __result__ = await self.__options.merge_options(baml_options).call_function_async(function_name="GenerateOrgRedesignImplications", args={
+                "populated_cells_json": populated_cells_json,"source_facts_json": source_facts_json,
+            })
+            return typing.cast(types.OrgRedesignImplications, __result__.cast_to(types, types, stream_types, False, __runtime__))
+    async def GenerateOrgSkillPrioritiesNarrative(self, skill_frequency_json: str,role_breakdown_json: str,source_facts_json: str,
+        baml_options: BamlCallOptions = {},
+    ) -> types.OrgSkillPrioritiesNarrative:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            __stream__ = self.stream.GenerateOrgSkillPrioritiesNarrative(skill_frequency_json=skill_frequency_json,role_breakdown_json=role_breakdown_json,source_facts_json=source_facts_json,
+                baml_options=baml_options)
+            return await __stream__.get_final_response()
+        else:
+            # Original non-streaming code
+            __result__ = await self.__options.merge_options(baml_options).call_function_async(function_name="GenerateOrgSkillPrioritiesNarrative", args={
+                "skill_frequency_json": skill_frequency_json,"role_breakdown_json": role_breakdown_json,"source_facts_json": source_facts_json,
+            })
+            return typing.cast(types.OrgSkillPrioritiesNarrative, __result__.cast_to(types, types, stream_types, False, __runtime__))
+    async def GenerateOrgTopExposureNarrative(self, highest_ais_roles_json: str,highest_aps_roles_json: str,source_facts_json: str,
+        baml_options: BamlCallOptions = {},
+    ) -> types.OrgGroundedClaim:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            __stream__ = self.stream.GenerateOrgTopExposureNarrative(highest_ais_roles_json=highest_ais_roles_json,highest_aps_roles_json=highest_aps_roles_json,source_facts_json=source_facts_json,
+                baml_options=baml_options)
+            return await __stream__.get_final_response()
+        else:
+            # Original non-streaming code
+            __result__ = await self.__options.merge_options(baml_options).call_function_async(function_name="GenerateOrgTopExposureNarrative", args={
+                "highest_ais_roles_json": highest_ais_roles_json,"highest_aps_roles_json": highest_aps_roles_json,"source_facts_json": source_facts_json,
+            })
+            return typing.cast(types.OrgGroundedClaim, __result__.cast_to(types, types, stream_types, False, __runtime__))
     async def GenerateRecommendations(self, title: str,department: str,classification: str,risk_level: str,ais_composite: float,aps_composite: float,tasks: str,task_categories: str,ais_summary: str,aps_summary: str,
         baml_options: BamlCallOptions = {},
     ) -> types.RoleRecommendations:
@@ -97,6 +157,21 @@ class BamlAsyncClient:
                 "title": title,"department": department,"classification": classification,"risk_level": risk_level,"ais_composite": ais_composite,"aps_composite": aps_composite,"tasks": tasks,"task_categories": task_categories,"ais_summary": ais_summary,"aps_summary": aps_summary,
             })
             return typing.cast(types.RoleRecommendations, __result__.cast_to(types, types, stream_types, False, __runtime__))
+    async def GenerateRoleInsight(self, job_description: str,role_title: typing.Optional[str] = None,department: typing.Optional[str] = None,grade: typing.Optional[str] = None,fte: typing.Optional[float] = None,location_or_jurisdiction: typing.Optional[str] = None,organisation_name: typing.Optional[str] = None,role_context: typing.Optional[str] = None,
+        baml_options: BamlCallOptions = {},
+    ) -> types.GeneratedRoleInsight:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            __stream__ = self.stream.GenerateRoleInsight(job_description=job_description,role_title=role_title,department=department,grade=grade,fte=fte,location_or_jurisdiction=location_or_jurisdiction,organisation_name=organisation_name,role_context=role_context,
+                baml_options=baml_options)
+            return await __stream__.get_final_response()
+        else:
+            # Original non-streaming code
+            __result__ = await self.__options.merge_options(baml_options).call_function_async(function_name="GenerateRoleInsight", args={
+                "job_description": job_description,"role_title": role_title,"department": department,"grade": grade,"fte": fte,"location_or_jurisdiction": location_or_jurisdiction,"organisation_name": organisation_name,"role_context": role_context,
+            })
+            return typing.cast(types.GeneratedRoleInsight, __result__.cast_to(types, types, stream_types, False, __runtime__))
     async def ScoreRole(self, title: str,department: str,description: str,
         baml_options: BamlCallOptions = {},
     ) -> types.RoleAnalysis:
@@ -121,6 +196,54 @@ class BamlStreamClient:
     def __init__(self, options: DoNotUseDirectlyCallManager):
         self.__options = options
 
+    def GenerateOrgBottomLine(self, organisation_name: str,workforce_snapshot_json: str,aria_matrix_json: str,source_facts_json: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.OrgGroundedClaim, types.OrgGroundedClaim]:
+        __ctx__, __result__ = self.__options.merge_options(baml_options).create_async_stream(function_name="GenerateOrgBottomLine", args={
+            "organisation_name": organisation_name,"workforce_snapshot_json": workforce_snapshot_json,"aria_matrix_json": aria_matrix_json,"source_facts_json": source_facts_json,
+        })
+        return baml_py.BamlStream[stream_types.OrgGroundedClaim, types.OrgGroundedClaim](
+          __result__,
+          lambda x: typing.cast(stream_types.OrgGroundedClaim, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.OrgGroundedClaim, x.cast_to(types, types, stream_types, False, __runtime__)),
+          __ctx__,
+        )
+    def GenerateOrgRedesignImplications(self, populated_cells_json: str,source_facts_json: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.OrgRedesignImplications, types.OrgRedesignImplications]:
+        __ctx__, __result__ = self.__options.merge_options(baml_options).create_async_stream(function_name="GenerateOrgRedesignImplications", args={
+            "populated_cells_json": populated_cells_json,"source_facts_json": source_facts_json,
+        })
+        return baml_py.BamlStream[stream_types.OrgRedesignImplications, types.OrgRedesignImplications](
+          __result__,
+          lambda x: typing.cast(stream_types.OrgRedesignImplications, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.OrgRedesignImplications, x.cast_to(types, types, stream_types, False, __runtime__)),
+          __ctx__,
+        )
+    def GenerateOrgSkillPrioritiesNarrative(self, skill_frequency_json: str,role_breakdown_json: str,source_facts_json: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.OrgSkillPrioritiesNarrative, types.OrgSkillPrioritiesNarrative]:
+        __ctx__, __result__ = self.__options.merge_options(baml_options).create_async_stream(function_name="GenerateOrgSkillPrioritiesNarrative", args={
+            "skill_frequency_json": skill_frequency_json,"role_breakdown_json": role_breakdown_json,"source_facts_json": source_facts_json,
+        })
+        return baml_py.BamlStream[stream_types.OrgSkillPrioritiesNarrative, types.OrgSkillPrioritiesNarrative](
+          __result__,
+          lambda x: typing.cast(stream_types.OrgSkillPrioritiesNarrative, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.OrgSkillPrioritiesNarrative, x.cast_to(types, types, stream_types, False, __runtime__)),
+          __ctx__,
+        )
+    def GenerateOrgTopExposureNarrative(self, highest_ais_roles_json: str,highest_aps_roles_json: str,source_facts_json: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.OrgGroundedClaim, types.OrgGroundedClaim]:
+        __ctx__, __result__ = self.__options.merge_options(baml_options).create_async_stream(function_name="GenerateOrgTopExposureNarrative", args={
+            "highest_ais_roles_json": highest_ais_roles_json,"highest_aps_roles_json": highest_aps_roles_json,"source_facts_json": source_facts_json,
+        })
+        return baml_py.BamlStream[stream_types.OrgGroundedClaim, types.OrgGroundedClaim](
+          __result__,
+          lambda x: typing.cast(stream_types.OrgGroundedClaim, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.OrgGroundedClaim, x.cast_to(types, types, stream_types, False, __runtime__)),
+          __ctx__,
+        )
     def GenerateRecommendations(self, title: str,department: str,classification: str,risk_level: str,ais_composite: float,aps_composite: float,tasks: str,task_categories: str,ais_summary: str,aps_summary: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[stream_types.RoleRecommendations, types.RoleRecommendations]:
@@ -131,6 +254,18 @@ class BamlStreamClient:
           __result__,
           lambda x: typing.cast(stream_types.RoleRecommendations, x.cast_to(types, types, stream_types, True, __runtime__)),
           lambda x: typing.cast(types.RoleRecommendations, x.cast_to(types, types, stream_types, False, __runtime__)),
+          __ctx__,
+        )
+    def GenerateRoleInsight(self, job_description: str,role_title: typing.Optional[str] = None,department: typing.Optional[str] = None,grade: typing.Optional[str] = None,fte: typing.Optional[float] = None,location_or_jurisdiction: typing.Optional[str] = None,organisation_name: typing.Optional[str] = None,role_context: typing.Optional[str] = None,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.GeneratedRoleInsight, types.GeneratedRoleInsight]:
+        __ctx__, __result__ = self.__options.merge_options(baml_options).create_async_stream(function_name="GenerateRoleInsight", args={
+            "job_description": job_description,"role_title": role_title,"department": department,"grade": grade,"fte": fte,"location_or_jurisdiction": location_or_jurisdiction,"organisation_name": organisation_name,"role_context": role_context,
+        })
+        return baml_py.BamlStream[stream_types.GeneratedRoleInsight, types.GeneratedRoleInsight](
+          __result__,
+          lambda x: typing.cast(stream_types.GeneratedRoleInsight, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.GeneratedRoleInsight, x.cast_to(types, types, stream_types, False, __runtime__)),
           __ctx__,
         )
     def ScoreRole(self, title: str,department: str,description: str,
@@ -153,11 +288,46 @@ class BamlHttpRequestClient:
     def __init__(self, options: DoNotUseDirectlyCallManager):
         self.__options = options
 
+    async def GenerateOrgBottomLine(self, organisation_name: str,workforce_snapshot_json: str,aria_matrix_json: str,source_facts_json: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GenerateOrgBottomLine", args={
+            "organisation_name": organisation_name,"workforce_snapshot_json": workforce_snapshot_json,"aria_matrix_json": aria_matrix_json,"source_facts_json": source_facts_json,
+        }, mode="request")
+        return __result__
+    async def GenerateOrgRedesignImplications(self, populated_cells_json: str,source_facts_json: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GenerateOrgRedesignImplications", args={
+            "populated_cells_json": populated_cells_json,"source_facts_json": source_facts_json,
+        }, mode="request")
+        return __result__
+    async def GenerateOrgSkillPrioritiesNarrative(self, skill_frequency_json: str,role_breakdown_json: str,source_facts_json: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GenerateOrgSkillPrioritiesNarrative", args={
+            "skill_frequency_json": skill_frequency_json,"role_breakdown_json": role_breakdown_json,"source_facts_json": source_facts_json,
+        }, mode="request")
+        return __result__
+    async def GenerateOrgTopExposureNarrative(self, highest_ais_roles_json: str,highest_aps_roles_json: str,source_facts_json: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GenerateOrgTopExposureNarrative", args={
+            "highest_ais_roles_json": highest_ais_roles_json,"highest_aps_roles_json": highest_aps_roles_json,"source_facts_json": source_facts_json,
+        }, mode="request")
+        return __result__
     async def GenerateRecommendations(self, title: str,department: str,classification: str,risk_level: str,ais_composite: float,aps_composite: float,tasks: str,task_categories: str,ais_summary: str,aps_summary: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GenerateRecommendations", args={
             "title": title,"department": department,"classification": classification,"risk_level": risk_level,"ais_composite": ais_composite,"aps_composite": aps_composite,"tasks": tasks,"task_categories": task_categories,"ais_summary": ais_summary,"aps_summary": aps_summary,
+        }, mode="request")
+        return __result__
+    async def GenerateRoleInsight(self, job_description: str,role_title: typing.Optional[str] = None,department: typing.Optional[str] = None,grade: typing.Optional[str] = None,fte: typing.Optional[float] = None,location_or_jurisdiction: typing.Optional[str] = None,organisation_name: typing.Optional[str] = None,role_context: typing.Optional[str] = None,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GenerateRoleInsight", args={
+            "job_description": job_description,"role_title": role_title,"department": department,"grade": grade,"fte": fte,"location_or_jurisdiction": location_or_jurisdiction,"organisation_name": organisation_name,"role_context": role_context,
         }, mode="request")
         return __result__
     async def ScoreRole(self, title: str,department: str,description: str,
@@ -175,11 +345,46 @@ class BamlHttpStreamRequestClient:
     def __init__(self, options: DoNotUseDirectlyCallManager):
         self.__options = options
 
+    async def GenerateOrgBottomLine(self, organisation_name: str,workforce_snapshot_json: str,aria_matrix_json: str,source_facts_json: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GenerateOrgBottomLine", args={
+            "organisation_name": organisation_name,"workforce_snapshot_json": workforce_snapshot_json,"aria_matrix_json": aria_matrix_json,"source_facts_json": source_facts_json,
+        }, mode="stream")
+        return __result__
+    async def GenerateOrgRedesignImplications(self, populated_cells_json: str,source_facts_json: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GenerateOrgRedesignImplications", args={
+            "populated_cells_json": populated_cells_json,"source_facts_json": source_facts_json,
+        }, mode="stream")
+        return __result__
+    async def GenerateOrgSkillPrioritiesNarrative(self, skill_frequency_json: str,role_breakdown_json: str,source_facts_json: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GenerateOrgSkillPrioritiesNarrative", args={
+            "skill_frequency_json": skill_frequency_json,"role_breakdown_json": role_breakdown_json,"source_facts_json": source_facts_json,
+        }, mode="stream")
+        return __result__
+    async def GenerateOrgTopExposureNarrative(self, highest_ais_roles_json: str,highest_aps_roles_json: str,source_facts_json: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GenerateOrgTopExposureNarrative", args={
+            "highest_ais_roles_json": highest_ais_roles_json,"highest_aps_roles_json": highest_aps_roles_json,"source_facts_json": source_facts_json,
+        }, mode="stream")
+        return __result__
     async def GenerateRecommendations(self, title: str,department: str,classification: str,risk_level: str,ais_composite: float,aps_composite: float,tasks: str,task_categories: str,ais_summary: str,aps_summary: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GenerateRecommendations", args={
             "title": title,"department": department,"classification": classification,"risk_level": risk_level,"ais_composite": ais_composite,"aps_composite": aps_composite,"tasks": tasks,"task_categories": task_categories,"ais_summary": ais_summary,"aps_summary": aps_summary,
+        }, mode="stream")
+        return __result__
+    async def GenerateRoleInsight(self, job_description: str,role_title: typing.Optional[str] = None,department: typing.Optional[str] = None,grade: typing.Optional[str] = None,fte: typing.Optional[float] = None,location_or_jurisdiction: typing.Optional[str] = None,organisation_name: typing.Optional[str] = None,role_context: typing.Optional[str] = None,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GenerateRoleInsight", args={
+            "job_description": job_description,"role_title": role_title,"department": department,"grade": grade,"fte": fte,"location_or_jurisdiction": location_or_jurisdiction,"organisation_name": organisation_name,"role_context": role_context,
         }, mode="stream")
         return __result__
     async def ScoreRole(self, title: str,department: str,description: str,

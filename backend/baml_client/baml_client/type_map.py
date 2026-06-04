@@ -22,17 +22,56 @@ type_map = {
     "types.APSScores": types.APSScores,
     "stream_types.APSScores": stream_types.APSScores,
 
+    "types.AudienceRoleRecommendations": types.AudienceRoleRecommendations,
+    "stream_types.AudienceRoleRecommendations": stream_types.AudienceRoleRecommendations,
+
+    "types.GeneratedRoleInsight": types.GeneratedRoleInsight,
+    "stream_types.GeneratedRoleInsight": stream_types.GeneratedRoleInsight,
+
+    "types.GroundedClaimEvidence": types.GroundedClaimEvidence,
+    "stream_types.GroundedClaimEvidence": stream_types.GroundedClaimEvidence,
+
+    "types.GroundedText": types.GroundedText,
+    "stream_types.GroundedText": stream_types.GroundedText,
+
+    "types.InferenceTrace": types.InferenceTrace,
+    "stream_types.InferenceTrace": stream_types.InferenceTrace,
+
+    "types.OrgGroundedClaim": types.OrgGroundedClaim,
+    "stream_types.OrgGroundedClaim": stream_types.OrgGroundedClaim,
+
+    "types.OrgRedesignImplication": types.OrgRedesignImplication,
+    "stream_types.OrgRedesignImplication": stream_types.OrgRedesignImplication,
+
+    "types.OrgRedesignImplications": types.OrgRedesignImplications,
+    "stream_types.OrgRedesignImplications": stream_types.OrgRedesignImplications,
+
+    "types.OrgSkillPrioritiesNarrative": types.OrgSkillPrioritiesNarrative,
+    "stream_types.OrgSkillPrioritiesNarrative": stream_types.OrgSkillPrioritiesNarrative,
+
     "types.Recommendation": types.Recommendation,
     "stream_types.Recommendation": stream_types.Recommendation,
 
     "types.RoleAnalysis": types.RoleAnalysis,
     "stream_types.RoleAnalysis": stream_types.RoleAnalysis,
 
+    "types.RoleMetadataInput": types.RoleMetadataInput,
+    "stream_types.RoleMetadataInput": stream_types.RoleMetadataInput,
+
+    "types.RoleNarratives": types.RoleNarratives,
+    "stream_types.RoleNarratives": stream_types.RoleNarratives,
+
     "types.RoleRecommendations": types.RoleRecommendations,
     "stream_types.RoleRecommendations": stream_types.RoleRecommendations,
 
+    "types.SourceFact": types.SourceFact,
+    "stream_types.SourceFact": stream_types.SourceFact,
+
     "types.TaskItem": types.TaskItem,
     "stream_types.TaskItem": stream_types.TaskItem,
+
+    "types.TaskSkill": types.TaskSkill,
+    "stream_types.TaskSkill": stream_types.TaskSkill,
 
     "types.VariableScore": types.VariableScore,
     "stream_types.VariableScore": stream_types.VariableScore,
@@ -41,6 +80,8 @@ type_map = {
     "types.RecommendationCategory": types.RecommendationCategory,
 
     "types.RecommendationPriority": types.RecommendationPriority,
+
+    "types.SkillType": types.SkillType,
 
     "types.TaskCategory": types.TaskCategory,
 

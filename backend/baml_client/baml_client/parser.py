@@ -23,11 +23,41 @@ class LlmResponseParser:
     def __init__(self, options: DoNotUseDirectlyCallManager):
         self.__options = options
 
+    def GenerateOrgBottomLine(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.OrgGroundedClaim:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="GenerateOrgBottomLine", llm_response=llm_response, mode="request")
+        return typing.cast(types.OrgGroundedClaim, __result__)
+
+    def GenerateOrgRedesignImplications(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.OrgRedesignImplications:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="GenerateOrgRedesignImplications", llm_response=llm_response, mode="request")
+        return typing.cast(types.OrgRedesignImplications, __result__)
+
+    def GenerateOrgSkillPrioritiesNarrative(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.OrgSkillPrioritiesNarrative:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="GenerateOrgSkillPrioritiesNarrative", llm_response=llm_response, mode="request")
+        return typing.cast(types.OrgSkillPrioritiesNarrative, __result__)
+
+    def GenerateOrgTopExposureNarrative(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.OrgGroundedClaim:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="GenerateOrgTopExposureNarrative", llm_response=llm_response, mode="request")
+        return typing.cast(types.OrgGroundedClaim, __result__)
+
     def GenerateRecommendations(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> types.RoleRecommendations:
         __result__ = self.__options.merge_options(baml_options).parse_response(function_name="GenerateRecommendations", llm_response=llm_response, mode="request")
         return typing.cast(types.RoleRecommendations, __result__)
+
+    def GenerateRoleInsight(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.GeneratedRoleInsight:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="GenerateRoleInsight", llm_response=llm_response, mode="request")
+        return typing.cast(types.GeneratedRoleInsight, __result__)
 
     def ScoreRole(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -43,11 +73,41 @@ class LlmStreamParser:
     def __init__(self, options: DoNotUseDirectlyCallManager):
         self.__options = options
 
+    def GenerateOrgBottomLine(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.OrgGroundedClaim:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="GenerateOrgBottomLine", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.OrgGroundedClaim, __result__)
+
+    def GenerateOrgRedesignImplications(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.OrgRedesignImplications:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="GenerateOrgRedesignImplications", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.OrgRedesignImplications, __result__)
+
+    def GenerateOrgSkillPrioritiesNarrative(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.OrgSkillPrioritiesNarrative:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="GenerateOrgSkillPrioritiesNarrative", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.OrgSkillPrioritiesNarrative, __result__)
+
+    def GenerateOrgTopExposureNarrative(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.OrgGroundedClaim:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="GenerateOrgTopExposureNarrative", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.OrgGroundedClaim, __result__)
+
     def GenerateRecommendations(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> stream_types.RoleRecommendations:
         __result__ = self.__options.merge_options(baml_options).parse_response(function_name="GenerateRecommendations", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.RoleRecommendations, __result__)
+
+    def GenerateRoleInsight(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.GeneratedRoleInsight:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="GenerateRoleInsight", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.GeneratedRoleInsight, __result__)
 
     def ScoreRole(
         self, llm_response: str, baml_options: BamlCallOptions = {},

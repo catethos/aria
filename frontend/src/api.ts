@@ -1,6 +1,8 @@
-const API = "http://localhost:8000";
+import type { RoleSummary, RoleDetail, DashboardSummary, TaskItem, RecommendationItem, RoleReportContent } from "./types";
 
-import type { RoleSummary, RoleDetail, DashboardSummary, TaskItem, RecommendationItem } from "./types";
+const API =
+  import.meta.env.VITE_API_URL ||
+  `${window.location.protocol}//${window.location.hostname}:8000`;
 
 export async function fetchRoles(dept?: string): Promise<RoleSummary[]> {
   const url = dept ? `${API}/api/roles?dept=${encodeURIComponent(dept)}` : `${API}/api/roles`;
@@ -10,6 +12,14 @@ export async function fetchRoles(dept?: string): Promise<RoleSummary[]> {
 
 export async function fetchRole(id: number): Promise<RoleDetail> {
   const res = await fetch(`${API}/api/roles/${id}`);
+  return res.json();
+}
+
+export async function fetchRoleReportContent(id: number): Promise<RoleReportContent> {
+  const res = await fetch(`${API}/api/reports/roles/${id}/content`);
+  if (!res.ok) {
+    throw new Error("Failed to load role report content");
+  }
   return res.json();
 }
 
